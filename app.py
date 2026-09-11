@@ -8,6 +8,9 @@ import uuid
 
 DATEN_DATEI = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gespeicherte_eingaben.json")
 LOGO_DATEI = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo.png")
+BANNER_DATEI = os.path.join(os.path.dirname(os.path.abspath(__file__)), "banner.png")
+DOKUMENTE_ORDNER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pinnwand_dokumente")
+os.makedirs(DOKUMENTE_ORDNER, exist_ok=True)
 
 st.set_page_config(
     page_title="PatchEasy Prototyp",
@@ -664,25 +667,27 @@ FEIERTAGE_DATEN = {
 st.session_state.setdefault("rollennamen", {ELTERNTEIL_1: ELTERNTEIL_1, ELTERNTEIL_2: ELTERNTEIL_2})
 st.session_state.setdefault("rollenfarben", {ELTERNTEIL_1: VATER_FARBE, ELTERNTEIL_2: MUTTER_FARBE})
 
-st.markdown(
-    f"""
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:2px;">
-      <div style="width:44px;height:44px;border-radius:12px;flex-shrink:0;
-                  background:linear-gradient(135deg, {farbe(ELTERNTEIL_1)} 50%, {farbe(ELTERNTEIL_2)} 50%);"></div>
-      <div>
+if os.path.exists(BANNER_DATEI):
+    st.image(BANNER_DATEI, width=340)
+else:
+    st.markdown(
+        """
         <div style="font-size:2.1rem;font-weight:800;letter-spacing:-0.03em;line-height:1.15;">
           PatchEasy
         </div>
-        <div style="font-size:0.95rem;font-weight:500;opacity:0.6;">
-          Funktionsprototyp
-          <span style="display:inline-block;margin-left:8px;padding:1px 9px;border-radius:999px;
-                       background:{farbe(ELTERNTEIL_1)};color:white;font-size:0.7rem;font-weight:700;
-                       vertical-align:middle;">{anzeige(ELTERNTEIL_1)}</span>
-          <span style="display:inline-block;margin-left:4px;padding:1px 9px;border-radius:999px;
-                       background:{farbe(ELTERNTEIL_2)};color:white;font-size:0.7rem;font-weight:700;
-                       vertical-align:middle;">{anzeige(ELTERNTEIL_2)}</span>
-        </div>
-      </div>
+        """,
+        unsafe_allow_html=True,
+    )
+st.markdown(
+    f"""
+    <div style="font-size:0.95rem;font-weight:500;opacity:0.6;margin-top:-4px;margin-bottom:6px;">
+      Funktionsprototyp
+      <span style="display:inline-block;margin-left:8px;padding:1px 9px;border-radius:999px;
+                   background:{farbe(ELTERNTEIL_1)};color:white;font-size:0.7rem;font-weight:700;
+                   vertical-align:middle;">{anzeige(ELTERNTEIL_1)}</span>
+      <span style="display:inline-block;margin-left:4px;padding:1px 9px;border-radius:999px;
+                   background:{farbe(ELTERNTEIL_2)};color:white;font-size:0.7rem;font-weight:700;
+                   vertical-align:middle;">{anzeige(ELTERNTEIL_2)}</span>
     </div>
     """,
     unsafe_allow_html=True,
@@ -703,6 +708,10 @@ st.session_state.setdefault("wechselzeit_ausnahmen", {})  # {datetime.date: date
 st.session_state.setdefault("kinder", ["Kind 1"])  # Namen der Kinder, fuer die Ausgaben erfasst werden koennen
 st.session_state.setdefault("ausgaben", [])  # [{"id","datum","beschreibung","betrag","bezahlt_von","anteil_vater_pct","kind"}]
 st.session_state.setdefault("ausgleichszahlungen", [])  # [{"id","datum","von","betrag"}] - direkte Ausgleichszahlungen zwischen den Eltern
+st.session_state.setdefault("dokumente", [])  # [{"id","titel","dateiname","original_name","hochgeladen_am"}]
+st.session_state.setdefault("notfallkontakte", [])  # [{"id","name","rolle","telefon","notiz"}]
+st.session_state.setdefault("pw_doku_form_key", 0)  # zaehlt hoch, um Titel-Feld + file_uploader nach dem Speichern zurueckzusetzen
+st.session_state.setdefault("nk_form_key", 0)  # zaehlt hoch, um das Kontaktformular nach dem Speichern zurueckzusetzen
 
 
 def lade_gespeicherte_daten():
@@ -858,6 +867,28 @@ def lade_gespeicherte_daten():
             }
             for z in daten["ausgleichszahlungen"]
         ]
+    if "dokumente" in daten:
+        st.session_state["dokumente"] = [
+            {
+                "id": d.get("id") or uuid.uuid4().hex[:8],
+                "titel": d.get("titel", "Dokument"),
+                "dateiname": d.get("dateiname", ""),
+                "original_name": d.get("original_name", ""),
+                "hochgeladen_am": d.get("hochgeladen_am", ""),
+            }
+            for d in daten["dokumente"]
+        ]
+    if "notfallkontakte" in daten:
+        st.session_state["notfallkontakte"] = [
+            {
+                "id": k.get("id") or uuid.uuid4().hex[:8],
+                "name": k.get("name", ""),
+                "rolle": k.get("rolle", ""),
+                "telefon": k.get("telefon", ""),
+                "notiz": k.get("notiz", ""),
+            }
+            for k in daten["notfallkontakte"]
+        ]
 
 
 def speichere_daten():
@@ -914,6 +945,8 @@ def speichere_daten():
             {"id": z["id"], "datum": z["datum"].isoformat(), "von": z["von"], "betrag": z["betrag"]}
             for z in st.session_state["ausgleichszahlungen"]
         ],
+        "dokumente": st.session_state["dokumente"],
+        "notfallkontakte": st.session_state["notfallkontakte"],
     }
     try:
         with open(DATEN_DATEI, "w", encoding="utf-8") as f:
@@ -1969,6 +2002,334 @@ def seite_finanzen():
     speichere_daten()
 
 
+_PINNWAND_SVG_PIN = (
+    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<path d="M12 2.5C8.55 2.5 5.75 5.3 5.75 8.75c0 4.75 6.25 12.25 6.25 12.25s6.25-7.5 6.25-12.25'
+    'C18.25 5.3 15.45 2.5 12 2.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>'
+    '<circle cx="12" cy="8.75" r="2.4" stroke="currentColor" stroke-width="1.6"/></svg>'
+)
+_PINNWAND_SVG_PHONE = (
+    '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20'
+    'c0 .6-.4 1-1 1C10.4 21 3 13.6 3 4c0-.6.4-1 1-1h3.4c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1L6.6 10.8z"'
+    ' stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>'
+)
+_PINNWAND_SVG_BILD = (
+    '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<rect x="3" y="4" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="1.6"/>'
+    '<circle cx="8.5" cy="9.5" r="1.4" stroke="currentColor" stroke-width="1.6"/>'
+    '<path d="M21 15.5l-5-5a1.5 1.5 0 0 0-2.1 0L4 20" stroke="currentColor" stroke-width="1.6" '
+    'stroke-linecap="round" stroke-linejoin="round"/></svg>'
+)
+
+
+def _pinnwand_karten_stil(karten_id: str, praefix: str):
+    """Gibt der Karte mit dem Key f'{praefix}{karten_id}' eine dezente Schraeglage
+    und dem angehefteten Pin eine markentypische Farbe – modern statt bunt-kitschig."""
+    _wert = int(karten_id, 16)
+    _winkel = ((_wert % 7) - 3) * 0.9
+    _pin_farben = ["#534AB7", "#0F5C66", "#C97B4A", "#4A7A6B", "#8859A3"]
+    _pin_farbe = _pin_farben[_wert % len(_pin_farben)]
+    st.markdown(
+        f"""
+        <style>
+        .st-key-{praefix}{karten_id} {{ transform: rotate({_winkel:.1f}deg); }}
+        .st-key-{praefix}{karten_id}::before {{ background: {_pin_farbe}; }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def seite_pinnwand():
+    st.subheader(":material/push_pin: Pinnwand")
+    st.caption(
+        "Der gemeinsame Ablageort für alles, was beide Elternteile griffbereit haben sollten – "
+        "Fotos von Dokumenten wie Stundenplan oder Packliste, und die wichtigsten Notfallkontakte."
+    )
+
+    _kontakte = st.session_state["notfallkontakte"]
+    _dokumente = st.session_state["dokumente"]
+
+    # ---------- Optik: Korkwand, Karteikarten, angeheftete Pins – modern statt kitschig ----------
+    st.markdown(
+        """
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Caveat:wght@600;700&display=swap');
+
+        div[class*="st-key-pinnwand_board"] {
+            background-color: #cead7c;
+            background-image:
+                radial-gradient(ellipse 2.5px 1.5px at 8% 20%, rgba(110,80,45,0.30), transparent 65%),
+                radial-gradient(ellipse 1.5px 2px at 32% 62%, rgba(110,80,45,0.26), transparent 65%),
+                radial-gradient(ellipse 2px 1.2px at 58% 12%, rgba(140,105,60,0.24), transparent 65%),
+                radial-gradient(ellipse 1.2px 1.8px at 78% 68%, rgba(110,80,45,0.24), transparent 65%),
+                radial-gradient(ellipse 1.8px 1.2px at 18% 88%, rgba(140,105,60,0.2), transparent 65%),
+                radial-gradient(ellipse 1.2px 1.2px at 92% 42%, rgba(225,195,145,0.45), transparent 65%),
+                radial-gradient(ellipse 1.5px 1.5px at 45% 38%, rgba(225,195,145,0.35), transparent 65%),
+                linear-gradient(160deg, #d5b482, #c39c6a);
+            background-size: 41px 33px, 47px 43px, 31px 51px, 57px 45px, 65px 39px, 35px 31px, 53px 49px, 100% 100%;
+            border: 16px solid #d8b482 !important;
+            border-image: repeating-linear-gradient(98deg, #e8cd9e 0px, #ddbd8c 5px, #cca873 9px, #dfc091 13px) 16 !important;
+            border-radius: 2px !important;
+            box-shadow: 0 12px 26px rgba(35,25,15,0.24) !important;
+            padding: 1.7rem 1.5rem !important;
+            position: relative !important;
+        }
+        div[class*="st-key-pinnwand_board"]::before,
+        div[class*="st-key-pinnwand_board"]::after {
+            content: "";
+            position: absolute;
+            top: -9px;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #e9e9e9, #a0a0a0 55%, #707070);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            z-index: 5;
+        }
+        div[class*="st-key-pinnwand_board"]::before { left: 26px; }
+        div[class*="st-key-pinnwand_board"]::after { right: 26px; }
+        .pinnwand-titel, .pinnwand-subtitel {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #fdf6e8;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            letter-spacing: -0.01em;
+        }
+        .pinnwand-titel {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .pinnwand-subtitel {
+            font-size: 1.02rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            opacity: 0.92;
+            margin: 0.3rem 0 1rem 0;
+        }
+        .pinnwand-titel svg, .pinnwand-subtitel svg {
+            flex-shrink: 0;
+            opacity: 0.95;
+        }
+        .pinnwand-leer {
+            color: #fdf6e8;
+            opacity: 0.85;
+            font-size: 0.95rem;
+        }
+        div[class*="st-key-karte_"] {
+            background: #fffdf8 !important;
+            border: none !important;
+            border-radius: 9px !important;
+            box-shadow: 0 12px 22px rgba(30,20,10,0.22), 0 2px 6px rgba(30,20,10,0.14) !important;
+            position: relative !important;
+            margin: 18px 8px 18px 8px !important;
+            padding: 20px 15px 14px 15px !important;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        div[class*="st-key-karte_"]:hover {
+            box-shadow: 0 16px 28px rgba(30,20,10,0.26), 0 3px 8px rgba(30,20,10,0.16) !important;
+        }
+        div[class*="st-key-karte_"]::before {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2.5px solid #fffdf8;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 -2px 3px rgba(0,0,0,0.18), inset 0 1.5px 2px rgba(255,255,255,0.4);
+            z-index: 20;
+        }
+        div[class*="st-key-karte_"] img {
+            border-radius: 5px;
+        }
+        .karten-titel {
+            font-family: 'Caveat', cursive;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #262626;
+            line-height: 1.15;
+        }
+        .karten-rolle {
+            color: #7a7a7a;
+            font-size: 0.88rem;
+            font-family: 'Poppins', sans-serif;
+            margin-bottom: 0.35rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.container(border=False, key="pinnwand_board"):
+        st.markdown(
+            f'<div class="pinnwand-titel">{_PINNWAND_SVG_PIN}<span>Angepinnt</span></div>',
+            unsafe_allow_html=True,
+        )
+
+        if not _kontakte and not _dokumente:
+            st.markdown(
+                '<div class="pinnwand-leer">Noch nichts an der Pinnwand. Weiter unten kannst du '
+                "Notfallkontakte eintragen und Dokumente hochladen.</div>",
+                unsafe_allow_html=True,
+            )
+        else:
+            if _kontakte:
+                st.markdown(
+                    f'<div class="pinnwand-subtitel">{_PINNWAND_SVG_PHONE}<span>Notfallkontakte</span></div>',
+                    unsafe_allow_html=True,
+                )
+                _kspalten = st.columns(3)
+                for _i, _k in enumerate(_kontakte):
+                    _pinnwand_karten_stil(_k["id"], "karte_kontakt_")
+                    with _kspalten[_i % 3]:
+                        with st.container(border=True, key=f"karte_kontakt_{_k['id']}"):
+                            st.markdown(f'<div class="karten-titel">{_k["name"]}</div>', unsafe_allow_html=True)
+                            if _k["rolle"]:
+                                st.markdown(f'<div class="karten-rolle">{_k["rolle"]}</div>', unsafe_allow_html=True)
+                            if _k["telefon"]:
+                                st.write(f":material/call: {_k['telefon']}")
+                            if _k.get("notiz"):
+                                st.caption(_k["notiz"])
+                            if st.button(":material/delete: Entfernen", key=f"del_kontakt_{_k['id']}", width="stretch"):
+                                st.session_state["notfallkontakte"] = [
+                                    x for x in st.session_state["notfallkontakte"] if x["id"] != _k["id"]
+                                ]
+                                speichere_daten()
+                                st.rerun()
+
+            if _kontakte and _dokumente:
+                st.markdown("<div style='height: 0.4rem'></div>", unsafe_allow_html=True)
+
+            if _dokumente:
+                st.markdown(
+                    f'<div class="pinnwand-subtitel">{_PINNWAND_SVG_BILD}<span>Dokumente</span></div>',
+                    unsafe_allow_html=True,
+                )
+                _spalten = st.columns(3)
+                _sortiert = sorted(_dokumente, key=lambda x: x.get("hochgeladen_am", ""), reverse=True)
+                for _i, _d in enumerate(_sortiert):
+                    _pfad = os.path.join(DOKUMENTE_ORDNER, _d["dateiname"])
+                    _ist_bild = _d["dateiname"].lower().endswith((".png", ".jpg", ".jpeg"))
+                    _pinnwand_karten_stil(_d["id"], "karte_doku_")
+                    with _spalten[_i % 3]:
+                        with st.container(border=True, key=f"karte_doku_{_d['id']}"):
+                            if os.path.exists(_pfad) and _ist_bild:
+                                st.image(_pfad, width="stretch")
+                            elif os.path.exists(_pfad):
+                                st.markdown(":material/description: **PDF**")
+                            else:
+                                st.caption(
+                                    ":material/warning: Datei fehlt (nach einem Neustart der App gehen "
+                                    "hochgeladene Dateien verloren – bitte erneut hochladen)."
+                                )
+                            st.markdown(f'<div class="karten-titel">{_d["titel"]}</div>', unsafe_allow_html=True)
+                            if _d.get("hochgeladen_am"):
+                                st.caption(_d["hochgeladen_am"])
+                            if os.path.exists(_pfad):
+                                with open(_pfad, "rb") as _f:
+                                    st.download_button(
+                                        ":material/download: Herunterladen", _f.read(),
+                                        file_name=_d.get("original_name") or _d["dateiname"],
+                                        key=f"dl_doku_{_d['id']}", width="stretch",
+                                    )
+                            if st.button(":material/delete: Entfernen", key=f"del_doku_{_d['id']}", width="stretch"):
+                                if os.path.exists(_pfad):
+                                    try:
+                                        os.remove(_pfad)
+                                    except Exception:
+                                        pass
+                                st.session_state["dokumente"] = [
+                                    x for x in st.session_state["dokumente"] if x["id"] != _d["id"]
+                                ]
+                                speichere_daten()
+                                st.rerun()
+
+    st.divider()
+
+    # ---------- Neuer Eintrag ----------
+    st.markdown("#### :material/add_circle: Neuer Eintrag")
+    _neu_c1, _neu_c2 = st.columns(2)
+
+    with _neu_c1:
+        with st.expander(":material/person_add: Notfallkontakt hinzufügen", expanded=False):
+            st.caption(
+                "Telefonnummern, die im Notfall schnell griffbereit sein sollten – z. B. "
+                "Großeltern, Kinderarzt, Schule oder Kita."
+            )
+            _nk_suffix = st.session_state["nk_form_key"]
+            _nk_name = st.text_input(
+                "Name", key=f"nk_name_{_nk_suffix}", placeholder="z. B. Oma Erika",
+            )
+            _nk_rolle = st.text_input(
+                "Rolle / Bezug", key=f"nk_rolle_{_nk_suffix}",
+                placeholder="z. B. Großmutter, Kinderarzt, Schule",
+            )
+            _nk_telefon = st.text_input(
+                "Telefonnummer", key=f"nk_telefon_{_nk_suffix}", placeholder="z. B. 0170 1234567",
+            )
+            _nk_notiz = st.text_input(
+                "Notiz (optional)", key=f"nk_notiz_{_nk_suffix}", placeholder="z. B. nur werktags erreichbar",
+            )
+            if st.button(":material/add: Kontakt speichern", key="nk_speichern"):
+                if _nk_name.strip() and _nk_telefon.strip():
+                    st.session_state["notfallkontakte"].append({
+                        "id": uuid.uuid4().hex[:8],
+                        "name": _nk_name.strip(),
+                        "rolle": _nk_rolle.strip(),
+                        "telefon": _nk_telefon.strip(),
+                        "notiz": _nk_notiz.strip(),
+                    })
+                    st.session_state["nk_form_key"] += 1
+                    speichere_daten()
+                    st.rerun()
+                else:
+                    st.warning("Bitte mindestens Name und Telefonnummer angeben.")
+
+    with _neu_c2:
+        with st.expander(":material/upload_file: Dokument hochladen", expanded=False):
+            st.caption(
+                "Fotos oder PDFs von wichtigen Dokumenten – z. B. Stundenplan, Packliste für die "
+                "Klassenfahrt, eine Seite aus dem Impfausweis."
+            )
+            _pw_suffix = st.session_state["pw_doku_form_key"]
+            _pw_titel = st.text_input(
+                "Titel", key=f"pw_doku_titel_{_pw_suffix}", placeholder="z. B. Stundenplan Mia",
+            )
+            _pw_datei = st.file_uploader(
+                "Foto oder PDF", type=["png", "jpg", "jpeg", "pdf"],
+                key=f"pw_doku_datei_{_pw_suffix}",
+            )
+            if st.button(":material/add: Hinzufügen", key="pw_doku_speichern"):
+                if _pw_datei is not None and _pw_titel.strip():
+                    _ext = os.path.splitext(_pw_datei.name)[1].lower()
+                    _neuer_dateiname = f"{uuid.uuid4().hex[:10]}{_ext}"
+                    _pfad = os.path.join(DOKUMENTE_ORDNER, _neuer_dateiname)
+                    with open(_pfad, "wb") as f:
+                        f.write(_pw_datei.getbuffer())
+                    st.session_state["dokumente"].append({
+                        "id": uuid.uuid4().hex[:8],
+                        "titel": _pw_titel.strip(),
+                        "dateiname": _neuer_dateiname,
+                        "original_name": _pw_datei.name,
+                        "hochgeladen_am": dt.date.today().isoformat(),
+                    })
+                    st.session_state["pw_doku_form_key"] += 1
+                    speichere_daten()
+                    st.rerun()
+                else:
+                    st.warning("Bitte einen Titel eingeben und eine Datei auswählen.")
+
+    speichere_daten()
+
+
 def seite_einstellungen():
     st.subheader(":material/tune: Grundeinstellungen")
     st.caption(
@@ -2042,6 +2403,7 @@ pg = st.navigation(
     [
         st.Page(seite_kalender, title="Kalender", icon=":material/calendar_month:", default=True),
         st.Page(seite_finanzen, title="Finanzen", icon=":material/account_balance_wallet:"),
+        st.Page(seite_pinnwand, title="Pinnwand", icon=":material/push_pin:"),
         st.Page(seite_einstellungen, title="Einstellungen", icon=":material/tune:"),
     ],
     position="top",
