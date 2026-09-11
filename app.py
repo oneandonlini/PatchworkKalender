@@ -667,6 +667,82 @@ FEIERTAGE_DATEN = {
 st.session_state.setdefault("rollennamen", {ELTERNTEIL_1: ELTERNTEIL_1, ELTERNTEIL_2: ELTERNTEIL_2})
 st.session_state.setdefault("rollenfarben", {ELTERNTEIL_1: VATER_FARBE, ELTERNTEIL_2: MUTTER_FARBE})
 
+# ---------- Globales Design-System ----------
+# Die Grundfarben/Schrift kommen aus .streamlit/config.toml (native Streamlit-Themes,
+# faerbt auch native Widgets wie Radio/Slider/Checkbox/Multiselect zuverlaessig ein).
+# Hier nur die Feinheiten, die ueber Theme-Optionen nicht erreichbar sind.
+st.markdown(
+    f"""
+    <style>
+    :root {{
+        --pe-purple: #534AB7;
+        --pe-purple-dark: #3F3890;
+        --pe-teal: #0F5C66;
+        --pe-card: #FFFFFF;
+        --pe-border: #D9D4EC;
+        --pe-ink-soft: #6E6A80;
+        --pe-radius-md: 14px;
+        --pe-shadow: 0 4px 16px rgba(83,74,183,0.08), 0 1px 3px rgba(44,42,61,0.05);
+    }}
+
+    /* Aktiver Menuepunkt oben: Markenfarbe statt neutralem Grau, damit sofort klar ist,
+       wo man sich befindet. */
+    a[data-testid="stTopNavLink"][aria-current="page"] {{
+        background: var(--pe-purple) !important;
+        box-shadow: 0 3px 10px rgba(83,74,183,0.30) !important;
+    }}
+    a[data-testid="stTopNavLink"][aria-current="page"] [data-testid="stIconMaterial"],
+    a[data-testid="stTopNavLink"][aria-current="page"] [data-testid="stMarkdownContainer"] p {{
+        color: #ffffff !important;
+    }}
+    a[data-testid="stTopNavLink"]:not([aria-current="page"]):hover {{
+        background: rgba(83,74,183,0.08) !important;
+    }}
+
+    /* Kennzahlen (st.metric) als dezente Karten statt frei schwebender Zahlen. */
+    div[data-testid="stMetric"] {{
+        background: var(--pe-card);
+        border: 1px solid var(--pe-border);
+        border-radius: var(--pe-radius-md);
+        padding: 0.9rem 1.1rem 0.75rem 1.1rem;
+        box-shadow: var(--pe-shadow);
+    }}
+    div[data-testid="stMetricLabel"] p {{ color: var(--pe-ink-soft) !important; }}
+
+    /* Karten-Look fuer Container mit einem Key, der mit "pe_card_" beginnt - wiederverwendbar
+       auf allen Seiten (z. B. Finanzen-Zeilen), Substring-Selektor wie beim Pinnwand-Board. */
+    div[class*="st-key-pe_card_"] {{
+        background: var(--pe-card) !important;
+        border: 1px solid var(--pe-border) !important;
+        border-radius: var(--pe-radius-md) !important;
+        box-shadow: 0 1px 4px rgba(44,42,61,0.05) !important;
+        padding: 0.65rem 1rem !important;
+        margin-bottom: 0.55rem !important;
+    }}
+
+    /* Wunsch-/Verzicht-Buttons im Tages-Dialog: Farbe des jeweiligen Elternteils statt
+       neutralem Lila - macht auf einen Blick klar, wer gemeint ist. */
+    .st-key-tag_panel_wv button, .st-key-tag_panel_vv button {{
+        border-color: {farbe(ELTERNTEIL_1)} !important;
+        color: {farbe(ELTERNTEIL_1)} !important;
+    }}
+    .st-key-tag_panel_wv button:hover, .st-key-tag_panel_vv button:hover {{
+        background: {farbe(ELTERNTEIL_1)} !important;
+        color: #fff !important;
+    }}
+    .st-key-tag_panel_wm button, .st-key-tag_panel_vm button {{
+        border-color: {farbe(ELTERNTEIL_2)} !important;
+        color: {farbe(ELTERNTEIL_2)} !important;
+    }}
+    .st-key-tag_panel_wm button:hover, .st-key-tag_panel_vm button:hover {{
+        background: {farbe(ELTERNTEIL_2)} !important;
+        color: #fff !important;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 if os.path.exists(BANNER_DATEI):
     st.image(BANNER_DATEI, width=340)
 else:
@@ -680,14 +756,15 @@ else:
     )
 st.markdown(
     f"""
-    <div style="font-size:0.95rem;font-weight:500;opacity:0.6;margin-top:-4px;margin-bottom:6px;">
-      Funktionsprototyp
-      <span style="display:inline-block;margin-left:8px;padding:1px 9px;border-radius:999px;
-                   background:{farbe(ELTERNTEIL_1)};color:white;font-size:0.7rem;font-weight:700;
-                   vertical-align:middle;">{anzeige(ELTERNTEIL_1)}</span>
-      <span style="display:inline-block;margin-left:4px;padding:1px 9px;border-radius:999px;
-                   background:{farbe(ELTERNTEIL_2)};color:white;font-size:0.7rem;font-weight:700;
-                   vertical-align:middle;">{anzeige(ELTERNTEIL_2)}</span>
+    <div style="font-size:0.95rem;font-weight:600;color:var(--pe-ink-soft);margin-top:2px;margin-bottom:14px;
+                display:flex;align-items:center;flex-wrap:wrap;gap:0.4rem;">
+      <span>Funktionsprototyp</span>
+      <span style="display:inline-block;padding:2px 11px;border-radius:999px;
+                   background:{farbe(ELTERNTEIL_1)};color:white;font-size:0.72rem;font-weight:700;
+                   box-shadow:0 2px 5px rgba(0,0,0,0.12);">{anzeige(ELTERNTEIL_1)}</span>
+      <span style="display:inline-block;padding:2px 11px;border-radius:999px;
+                   background:{farbe(ELTERNTEIL_2)};color:white;font-size:0.72rem;font-weight:700;
+                   box-shadow:0 2px 5px rgba(0,0,0,0.12);">{anzeige(ELTERNTEIL_2)}</span>
     </div>
     """,
     unsafe_allow_html=True,
@@ -710,8 +787,11 @@ st.session_state.setdefault("ausgaben", [])  # [{"id","datum","beschreibung","be
 st.session_state.setdefault("ausgleichszahlungen", [])  # [{"id","datum","von","betrag"}] - direkte Ausgleichszahlungen zwischen den Eltern
 st.session_state.setdefault("dokumente", [])  # [{"id","titel","dateiname","original_name","hochgeladen_am"}]
 st.session_state.setdefault("notfallkontakte", [])  # [{"id","name","rolle","telefon","notiz"}]
+st.session_state.setdefault("uebergabe_checkliste", [])  # [{"id","text","erledigt"}] - was beim naechsten Wechsel mit soll
 st.session_state.setdefault("pw_doku_form_key", 0)  # zaehlt hoch, um Titel-Feld + file_uploader nach dem Speichern zurueckzusetzen
 st.session_state.setdefault("nk_form_key", 0)  # zaehlt hoch, um das Kontaktformular nach dem Speichern zurueckzusetzen
+st.session_state.setdefault("checkliste_form_key", 0)  # zaehlt hoch, um das Eingabefeld nach dem Hinzufuegen zurueckzusetzen
+st.session_state.setdefault("checkliste_reset_key", 0)  # zaehlt hoch, um alle Haekchen ueber "Zuruecksetzen" zu leeren
 
 
 def lade_gespeicherte_daten():
@@ -889,6 +969,15 @@ def lade_gespeicherte_daten():
             }
             for k in daten["notfallkontakte"]
         ]
+    if "uebergabe_checkliste" in daten:
+        st.session_state["uebergabe_checkliste"] = [
+            {
+                "id": p.get("id") or uuid.uuid4().hex[:8],
+                "text": p.get("text", ""),
+                "erledigt": bool(p.get("erledigt", False)),
+            }
+            for p in daten["uebergabe_checkliste"]
+        ]
 
 
 def speichere_daten():
@@ -947,6 +1036,7 @@ def speichere_daten():
         ],
         "dokumente": st.session_state["dokumente"],
         "notfallkontakte": st.session_state["notfallkontakte"],
+        "uebergabe_checkliste": st.session_state["uebergabe_checkliste"],
     }
     try:
         with open(DATEN_DATEI, "w", encoding="utf-8") as f:
@@ -977,7 +1067,7 @@ def date_list_widget(label, key):
             "Notiz (optional)", key=f"notiz_{key}",
             placeholder="z. B. Familienfeier, Geburtstag …",
         )
-        if st.button("➕ Hinzufügen", key=f"add_{key}"):
+        if st.button("➕ Hinzufügen", key=f"add_{key}", type="primary"):
             add_eintrag(key, d, notiz)
             st.rerun()
         for existing in list(st.session_state[key]):
@@ -1361,7 +1451,7 @@ def seite_kalender():
             "berücksichtigt). Bei wichtigen Entscheidungen bitte offiziell gegenprüfen."
         )
         bc1, bc2 = st.columns(2)
-        if bc1.button("📥 Ferien laden", disabled=bundesland is None, width="stretch"):
+        if bc1.button("📥 Ferien laden", disabled=bundesland is None, width="stretch", type="primary"):
             vorhandene = {(f["name"], f["start"], f["end"]) for f in st.session_state["ferien"]}
             neu = 0
             for name, s, e in FERIEN_DATEN[bundesland]:
@@ -1371,7 +1461,7 @@ def seite_kalender():
                     neu += 1
             st.success(f"{neu} Ferienzeiten hinzugefügt.")
             st.rerun()
-        if bc2.button("📥 Feiertage laden", disabled=bundesland is None, width="stretch"):
+        if bc2.button("📥 Feiertage laden", disabled=bundesland is None, width="stretch", type="primary"):
             vorhandene_ft = {(f["name"], f["datum"]) for f in st.session_state["feiertage"]}
             neu_ft = 0
             for name, d in FEIERTAGE_DATEN[bundesland]:
@@ -1416,7 +1506,7 @@ def seite_kalender():
             f_ferien_wechseltag = st.selectbox(
                 "Wechseltag während dieser Ferienzeit", WOCHENTAGE, key="f_ferien_wechseltag",
             )
-        if st.button("➕ Ferien hinzufügen"):
+        if st.button("➕ Ferien hinzufügen", type="primary"):
             if f_name and f_start <= f_end:
                 st.session_state["ferien"].append({
                     "name": f_name, "start": f_start, "end": f_end,
@@ -1475,7 +1565,7 @@ def seite_kalender():
         st.caption("Rein informativ – wird im Kalender markiert, beeinflusst aber nicht, bei wem das Kind ist.")
         ft_name = st.text_input("Name", placeholder="z. B. Weihnachten", key="ft_name")
         ft_datum = st.date_input("Datum", key="ft_datum")
-        if st.button("➕ Feiertag hinzufügen"):
+        if st.button("➕ Feiertag hinzufügen", type="primary"):
             if ft_name:
                 st.session_state["feiertage"].append({"name": ft_name, "datum": ft_datum})
                 st.rerun()
@@ -1590,21 +1680,23 @@ def seite_kalender():
     st.subheader("Kalender")
 
 
-    _legende_swatch = (
-        "display:inline-block; width:12px; height:12px; border-radius:3px; "
-        "vertical-align:middle; margin-right:4px;"
+    _chip_basis = (
+        "display:inline-flex; align-items:center; gap:6px; padding:5px 12px; "
+        "border-radius:999px; background:#FFFFFF; border:1px solid var(--pe-border); "
+        "font-size:0.86rem; font-weight:500; color:#2B2A3D; box-shadow:0 1px 3px rgba(44,42,61,0.04);"
     )
+    _legende_swatch = "display:inline-block; width:10px; height:10px; border-radius:50%; flex-shrink:0;"
     legende = f"""
-    <div style="display:flex; gap:20px; margin-bottom:10px; font-size:14px; align-items:center; flex-wrap:wrap;">
-      <div><span style="{_legende_swatch}background:{farbe(ELTERNTEIL_1)};"></span>{anzeige(ELTERNTEIL_1)}</div>
-      <div><span style="{_legende_swatch}background:{farbe(ELTERNTEIL_2)};"></span>{anzeige(ELTERNTEIL_2)}</div>
-      <div>🏖️ Ferien</div>
-      <div>🎉 Feiertag</div>
-      <div>🎯 Wunschtag</div>
-      <div>🚫 Verzichtstag</div>
-      <div>⚠️ Konflikt</div>
-      <div style="display:flex; align-items:center; gap:6px;">
-        <span style="display:inline-block; width:20px; height:14px; border-radius:4px;
+    <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center; flex-wrap:wrap;">
+      <div style="{_chip_basis}"><span style="{_legende_swatch}background:{farbe(ELTERNTEIL_1)};"></span>{anzeige(ELTERNTEIL_1)}</div>
+      <div style="{_chip_basis}"><span style="{_legende_swatch}background:{farbe(ELTERNTEIL_2)};"></span>{anzeige(ELTERNTEIL_2)}</div>
+      <div style="{_chip_basis}">🏖️ Ferien</div>
+      <div style="{_chip_basis}">🎉 Feiertag</div>
+      <div style="{_chip_basis}">🎯 Wunschtag</div>
+      <div style="{_chip_basis}">🚫 Verzichtstag</div>
+      <div style="{_chip_basis}">⚠️ Konflikt</div>
+      <div style="{_chip_basis}">
+        <span style="display:inline-block; width:18px; height:12px; border-radius:4px; flex-shrink:0;
                      background:linear-gradient(90deg, {farbe(ELTERNTEIL_1)} 50%, {farbe(ELTERNTEIL_2)} 50%);"></span>
         Wechsel (Übergabe {wechselzeit.strftime('%H:%M')} Uhr, an einzelnen Tagen abweichend möglich)
       </div>
@@ -1693,6 +1785,13 @@ def seite_kalender():
     st.markdown(
         """
         <style>
+        div[class*="st-key-kalender_bereich"] {
+            background: var(--pe-card);
+            border: 1px solid var(--pe-border);
+            border-radius: var(--pe-radius-md);
+            box-shadow: var(--pe-shadow);
+            padding: 1.1rem 1.2rem 1.3rem 1.2rem;
+        }
         .st-key-kalender_bereich div[data-testid="stElementContainer"] { margin-bottom:3px !important; }
         .st-key-kalender_bereich button {
             padding:0.3rem 0.1rem !important;
@@ -1862,7 +1961,7 @@ def seite_finanzen():
             "Name hinzufügen", key="kind_name_neu", placeholder="z. B. Mia",
             label_visibility="collapsed",
         )
-        if _kind_neu_col2.button(":material/add: Hinzufügen", key="kind_hinzufuegen"):
+        if _kind_neu_col2.button(":material/add: Hinzufügen", key="kind_hinzufuegen", type="primary"):
             _name = _kind_name_neu.strip()
             if not _name:
                 st.warning("Bitte einen Namen eingeben.")
@@ -1915,7 +2014,7 @@ def seite_finanzen():
             f"→ {anzeige(ELTERNTEIL_1)} trägt {euro(_fa_betrag * _fa_anteil_vater / 100)}, "
             f"{anzeige(ELTERNTEIL_2)} trägt {euro(_fa_betrag * (100 - _fa_anteil_vater) / 100)}."
         )
-        if st.button(":material/add: Ausgabe speichern", key="fa_speichern"):
+        if st.button(":material/add: Ausgabe speichern", key="fa_speichern", type="primary"):
             if _fa_beschreibung.strip() and _fa_betrag > 0:
                 st.session_state["ausgaben"].append({
                     "id": uuid.uuid4().hex[:8],
@@ -1950,20 +2049,24 @@ def seite_finanzen():
         if not _ausgaben_gefiltert:
             st.caption("Keine Ausgaben für diese Auswahl.")
         for _a in sorted(_ausgaben_gefiltert, key=lambda x: x["datum"], reverse=True):
-            _c1, _c2, _c3, _c4, _c5, _c6 = st.columns([1.1, 2.2, 1.0, 2.1, 1.6, 0.5])
-            _c1.write(_a["datum"].strftime("%d.%m.%Y"))
-            _c2.write(_a["beschreibung"])
-            _c3.write(euro(_a["betrag"]))
-            _c4.write(
-                f"bezahlt von {anzeige(_a['bezahlt_von'])} · {anzeige(ELTERNTEIL_1)} {_a['anteil_vater_pct']:.0f}% / "
-                f"{anzeige(ELTERNTEIL_2)} {100 - _a['anteil_vater_pct']:.0f}%"
-            )
-            _c5.write(", ".join(_a.get("kind") or ["Kind"]))
-            if _c6.button(":material/delete:", key=f"del_ausgabe_{_a['id']}"):
-                st.session_state["ausgaben"] = [
-                    x for x in st.session_state["ausgaben"] if x["id"] != _a["id"]
-                ]
-                st.rerun()
+            with st.container(key=f"pe_card_ausgabe_{_a['id']}"):
+                _c1, _c2, _c3, _c4, _c5, _c6 = st.columns([1.1, 2.2, 1.0, 2.1, 1.6, 0.5])
+                _c1.caption(_a["datum"].strftime("%d.%m.%Y"))
+                _c2.markdown(f"**{_a['beschreibung']}**")
+                _c3.markdown(
+                    f"<span style='color:{farbe(_a['bezahlt_von'])};font-weight:700;'>{euro(_a['betrag'])}</span>",
+                    unsafe_allow_html=True,
+                )
+                _c4.caption(
+                    f"bezahlt von {anzeige(_a['bezahlt_von'])} · {anzeige(ELTERNTEIL_1)} {_a['anteil_vater_pct']:.0f}% / "
+                    f"{anzeige(ELTERNTEIL_2)} {100 - _a['anteil_vater_pct']:.0f}%"
+                )
+                _c5.caption(", ".join(_a.get("kind") or ["Kind"]))
+                if _c6.button(":material/delete:", key=f"del_ausgabe_{_a['id']}"):
+                    st.session_state["ausgaben"] = [
+                        x for x in st.session_state["ausgaben"] if x["id"] != _a["id"]
+                    ]
+                    st.rerun()
 
     st.divider()
 
@@ -1974,7 +2077,7 @@ def seite_finanzen():
         _fz_betrag = st.number_input(
             "Betrag (€)", min_value=0.0, step=1.0, format="%.2f", key="fz_betrag",
         )
-        if st.button(":material/add: Ausgleichszahlung speichern", key="fz_speichern"):
+        if st.button(":material/add: Ausgleichszahlung speichern", key="fz_speichern", type="primary"):
             if _fz_betrag > 0:
                 st.session_state["ausgleichszahlungen"].append({
                     "id": uuid.uuid4().hex[:8],
@@ -1989,15 +2092,19 @@ def seite_finanzen():
     if _ausgleiche:
         st.markdown("#### Ausgleichszahlungen")
         for _z in sorted(_ausgleiche, key=lambda x: x["datum"], reverse=True):
-            _c1, _c2, _c3, _c4 = st.columns([1.2, 2, 3, 0.6])
-            _c1.write(_z["datum"].strftime("%d.%m.%Y"))
-            _c2.write(euro(_z["betrag"]))
-            _c3.write(f"{anzeige(_z['von'])} hat gezahlt")
-            if _c4.button(":material/delete:", key=f"del_ausgleich_{_z['id']}"):
-                st.session_state["ausgleichszahlungen"] = [
-                    x for x in st.session_state["ausgleichszahlungen"] if x["id"] != _z["id"]
-                ]
-                st.rerun()
+            with st.container(key=f"pe_card_ausgleich_{_z['id']}"):
+                _c1, _c2, _c3, _c4 = st.columns([1.2, 2, 3, 0.6])
+                _c1.caption(_z["datum"].strftime("%d.%m.%Y"))
+                _c2.markdown(
+                    f"<span style='color:{farbe(_z['von'])};font-weight:700;'>{euro(_z['betrag'])}</span>",
+                    unsafe_allow_html=True,
+                )
+                _c3.write(f"{anzeige(_z['von'])} hat gezahlt")
+                if _c4.button(":material/delete:", key=f"del_ausgleich_{_z['id']}"):
+                    st.session_state["ausgleichszahlungen"] = [
+                        x for x in st.session_state["ausgleichszahlungen"] if x["id"] != _z["id"]
+                    ]
+                    st.rerun()
 
     speichere_daten()
 
@@ -2021,20 +2128,26 @@ _PINNWAND_SVG_BILD = (
     '<path d="M21 15.5l-5-5a1.5 1.5 0 0 0-2.1 0L4 20" stroke="currentColor" stroke-width="1.6" '
     'stroke-linecap="round" stroke-linejoin="round"/></svg>'
 )
+_PINNWAND_SVG_CHECK = (
+    '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<rect x="4" y="3.5" width="16" height="18" rx="2.3" stroke="currentColor" stroke-width="1.6"/>'
+    '<path d="M9 2.5h6a1 1 0 0 1 1 1v1.2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1z" '
+    'stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>'
+    '<path d="M8 12.3l2.3 2.3L16 9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" '
+    'stroke-linejoin="round"/></svg>'
+)
 
 
 def _pinnwand_karten_stil(karten_id: str, praefix: str):
-    """Gibt der Karte mit dem Key f'{praefix}{karten_id}' eine dezente Schraeglage
-    und dem angehefteten Pin eine markentypische Farbe – modern statt bunt-kitschig."""
+    """Gibt der Karte mit dem Key f'{praefix}{karten_id}' einen duennen, farbigen
+    Akzentstreifen oben - dezente Wiedererkennung statt aufwendiger Kork-Optik."""
     _wert = int(karten_id, 16)
-    _winkel = ((_wert % 7) - 3) * 0.9
     _pin_farben = ["#534AB7", "#0F5C66", "#C97B4A", "#4A7A6B", "#8859A3"]
-    _pin_farbe = _pin_farben[_wert % len(_pin_farben)]
+    _akzent_farbe = _pin_farben[_wert % len(_pin_farben)]
     st.markdown(
         f"""
         <style>
-        .st-key-{praefix}{karten_id} {{ transform: rotate({_winkel:.1f}deg); }}
-        .st-key-{praefix}{karten_id}::before {{ background: {_pin_farbe}; }}
+        .st-key-{praefix}{karten_id} {{ border-top: 4px solid {_akzent_farbe} !important; }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -2050,118 +2163,71 @@ def seite_pinnwand():
 
     _kontakte = st.session_state["notfallkontakte"]
     _dokumente = st.session_state["dokumente"]
+    _checkliste = st.session_state["uebergabe_checkliste"]
 
-    # ---------- Optik: Korkwand, Karteikarten, angeheftete Pins – modern statt kitschig ----------
+    # ---------- Optik: dezente Mint-Flaeche statt fotorealistischer Korkwand ----------
     st.markdown(
         """
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Caveat:wght@600;700&display=swap');
-
         div[class*="st-key-pinnwand_board"] {
-            background-color: #cead7c;
-            background-image:
-                radial-gradient(ellipse 2.5px 1.5px at 8% 20%, rgba(110,80,45,0.30), transparent 65%),
-                radial-gradient(ellipse 1.5px 2px at 32% 62%, rgba(110,80,45,0.26), transparent 65%),
-                radial-gradient(ellipse 2px 1.2px at 58% 12%, rgba(140,105,60,0.24), transparent 65%),
-                radial-gradient(ellipse 1.2px 1.8px at 78% 68%, rgba(110,80,45,0.24), transparent 65%),
-                radial-gradient(ellipse 1.8px 1.2px at 18% 88%, rgba(140,105,60,0.2), transparent 65%),
-                radial-gradient(ellipse 1.2px 1.2px at 92% 42%, rgba(225,195,145,0.45), transparent 65%),
-                radial-gradient(ellipse 1.5px 1.5px at 45% 38%, rgba(225,195,145,0.35), transparent 65%),
-                linear-gradient(160deg, #d5b482, #c39c6a);
-            background-size: 41px 33px, 47px 43px, 31px 51px, 57px 45px, 65px 39px, 35px 31px, 53px 49px, 100% 100%;
-            border: 16px solid #d8b482 !important;
-            border-image: repeating-linear-gradient(98deg, #e8cd9e 0px, #ddbd8c 5px, #cca873 9px, #dfc091 13px) 16 !important;
-            border-radius: 2px !important;
-            box-shadow: 0 12px 26px rgba(35,25,15,0.24) !important;
-            padding: 1.7rem 1.5rem !important;
-            position: relative !important;
+            background: #DCEFEC !important;
+            border: 1px solid #C4E0DC !important;
+            border-radius: var(--pe-radius-md) !important;
+            box-shadow: var(--pe-shadow) !important;
+            padding: 1.4rem 1.4rem 1.6rem 1.4rem !important;
         }
-        div[class*="st-key-pinnwand_board"]::before,
-        div[class*="st-key-pinnwand_board"]::after {
-            content: "";
-            position: absolute;
-            top: -9px;
-            width: 13px;
-            height: 13px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 35% 30%, #e9e9e9, #a0a0a0 55%, #707070);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-            z-index: 5;
-        }
-        div[class*="st-key-pinnwand_board"]::before { left: 26px; }
-        div[class*="st-key-pinnwand_board"]::after { right: 26px; }
         .pinnwand-titel, .pinnwand-subtitel {
-            font-family: 'Poppins', sans-serif;
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            color: #fdf6e8;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            color: var(--pe-teal);
             letter-spacing: -0.01em;
         }
         .pinnwand-titel {
-            font-size: 1.35rem;
+            font-size: 1.3rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
         }
         .pinnwand-subtitel {
-            font-size: 1.02rem;
-            font-weight: 600;
+            font-size: 0.92rem;
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            opacity: 0.92;
-            margin: 0.3rem 0 1rem 0;
+            color: var(--pe-ink-soft);
+            margin: 0.3rem 0 0.9rem 0;
         }
         .pinnwand-titel svg, .pinnwand-subtitel svg {
             flex-shrink: 0;
-            opacity: 0.95;
+            opacity: 0.9;
         }
         .pinnwand-leer {
-            color: #fdf6e8;
-            opacity: 0.85;
+            color: var(--pe-ink-soft);
             font-size: 0.95rem;
         }
         div[class*="st-key-karte_"] {
-            background: #fffdf8 !important;
-            border: none !important;
-            border-radius: 9px !important;
-            box-shadow: 0 12px 22px rgba(30,20,10,0.22), 0 2px 6px rgba(30,20,10,0.14) !important;
-            position: relative !important;
-            margin: 18px 8px 18px 8px !important;
-            padding: 20px 15px 14px 15px !important;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-        div[class*="st-key-karte_"]:hover {
-            box-shadow: 0 16px 28px rgba(30,20,10,0.26), 0 3px 8px rgba(30,20,10,0.16) !important;
-        }
-        div[class*="st-key-karte_"]::before {
-            content: "";
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            border: 2.5px solid #fffdf8;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 -2px 3px rgba(0,0,0,0.18), inset 0 1.5px 2px rgba(255,255,255,0.4);
-            z-index: 20;
+            background: var(--pe-card) !important;
+            border: 1px solid var(--pe-border) !important;
+            border-radius: var(--pe-radius-md) !important;
+            box-shadow: 0 1px 4px rgba(44,42,61,0.05) !important;
+            margin: 0 8px 14px 8px !important;
+            padding: 16px 16px 14px 16px !important;
         }
         div[class*="st-key-karte_"] img {
-            border-radius: 5px;
+            border-radius: 8px;
         }
         .karten-titel {
-            font-family: 'Caveat', cursive;
-            font-size: 1.5rem;
             font-weight: 700;
-            color: #262626;
-            line-height: 1.15;
+            font-size: 1.05rem;
+            color: #2B2A3D;
+            line-height: 1.25;
         }
         .karten-rolle {
-            color: #7a7a7a;
-            font-size: 0.88rem;
-            font-family: 'Poppins', sans-serif;
+            color: var(--pe-ink-soft);
+            font-size: 0.86rem;
             margin-bottom: 0.35rem;
+        }
+        div[class*="st-key-karte_check"] label p {
+            font-size: 0.96rem !important;
         }
         </style>
         """,
@@ -2174,13 +2240,52 @@ def seite_pinnwand():
             unsafe_allow_html=True,
         )
 
-        if not _kontakte and not _dokumente:
+        if not _kontakte and not _dokumente and not _checkliste:
             st.markdown(
                 '<div class="pinnwand-leer">Noch nichts an der Pinnwand. Weiter unten kannst du '
-                "Notfallkontakte eintragen und Dokumente hochladen.</div>",
+                "eine Übergabe-Checkliste anlegen, Notfallkontakte eintragen und Dokumente "
+                "hochladen.</div>",
                 unsafe_allow_html=True,
             )
         else:
+            if _checkliste:
+                st.markdown(
+                    f'<div class="pinnwand-subtitel">{_PINNWAND_SVG_CHECK}'
+                    "<span>Übergabe-Checkliste</span></div>",
+                    unsafe_allow_html=True,
+                )
+                _pinnwand_karten_stil("a1b2c3d4", "karte_checkliste_")
+                with st.container(border=True, key="karte_checkliste_a1b2c3d4"):
+                    st.caption("Was beim nächsten Wechsel mit soll:")
+                    _reset_suffix = st.session_state["checkliste_reset_key"]
+                    for _p in _checkliste:
+                        _pc1, _pc2 = st.columns([6, 1])
+                        with _pc1:
+                            _haken = st.checkbox(
+                                _p["text"], value=_p["erledigt"],
+                                key=f"chk_{_p['id']}_{_reset_suffix}",
+                            )
+                            if _haken != _p["erledigt"]:
+                                _p["erledigt"] = _haken
+                                speichere_daten()
+                        with _pc2:
+                            if st.button(":material/delete:", key=f"del_check_{_p['id']}"):
+                                st.session_state["uebergabe_checkliste"] = [
+                                    x for x in st.session_state["uebergabe_checkliste"] if x["id"] != _p["id"]
+                                ]
+                                speichere_daten()
+                                st.rerun()
+                    if any(p["erledigt"] for p in _checkliste):
+                        if st.button(":material/refresh: Für nächstes Mal zurücksetzen", key="checkliste_reset"):
+                            for _p in st.session_state["uebergabe_checkliste"]:
+                                _p["erledigt"] = False
+                            st.session_state["checkliste_reset_key"] += 1
+                            speichere_daten()
+                            st.rerun()
+
+            if _checkliste and (_kontakte or _dokumente):
+                st.markdown("<div style='height: 0.4rem'></div>", unsafe_allow_html=True)
+
             if _kontakte:
                 st.markdown(
                     f'<div class="pinnwand-subtitel">{_PINNWAND_SVG_PHONE}<span>Notfallkontakte</span></div>',
@@ -2256,7 +2361,30 @@ def seite_pinnwand():
 
     # ---------- Neuer Eintrag ----------
     st.markdown("#### :material/add_circle: Neuer Eintrag")
-    _neu_c1, _neu_c2 = st.columns(2)
+    _neu_c0, _neu_c1, _neu_c2 = st.columns(3)
+
+    with _neu_c0:
+        with st.expander(":material/checklist: Checklisten-Punkt hinzufügen", expanded=False):
+            st.caption(
+                "Dinge, die bei jedem Wechsel mit umziehen sollen – z. B. Sportzeug, "
+                "Medikamente, Kuscheltier, Ladekabel."
+            )
+            _chk_suffix = st.session_state["checkliste_form_key"]
+            _chk_text = st.text_input(
+                "Was soll mit?", key=f"chk_text_{_chk_suffix}", placeholder="z. B. Sportzeug",
+            )
+            if st.button(":material/add: Zur Liste hinzufügen", key="checkliste_speichern", type="primary"):
+                if _chk_text.strip():
+                    st.session_state["uebergabe_checkliste"].append({
+                        "id": uuid.uuid4().hex[:8],
+                        "text": _chk_text.strip(),
+                        "erledigt": False,
+                    })
+                    st.session_state["checkliste_form_key"] += 1
+                    speichere_daten()
+                    st.rerun()
+                else:
+                    st.warning("Bitte einen Text eingeben.")
 
     with _neu_c1:
         with st.expander(":material/person_add: Notfallkontakt hinzufügen", expanded=False):
@@ -2278,7 +2406,7 @@ def seite_pinnwand():
             _nk_notiz = st.text_input(
                 "Notiz (optional)", key=f"nk_notiz_{_nk_suffix}", placeholder="z. B. nur werktags erreichbar",
             )
-            if st.button(":material/add: Kontakt speichern", key="nk_speichern"):
+            if st.button(":material/add: Kontakt speichern", key="nk_speichern", type="primary"):
                 if _nk_name.strip() and _nk_telefon.strip():
                     st.session_state["notfallkontakte"].append({
                         "id": uuid.uuid4().hex[:8],
@@ -2307,7 +2435,7 @@ def seite_pinnwand():
                 "Foto oder PDF", type=["png", "jpg", "jpeg", "pdf"],
                 key=f"pw_doku_datei_{_pw_suffix}",
             )
-            if st.button(":material/add: Hinzufügen", key="pw_doku_speichern"):
+            if st.button(":material/add: Hinzufügen", key="pw_doku_speichern", type="primary"):
                 if _pw_datei is not None and _pw_titel.strip():
                     _ext = os.path.splitext(_pw_datei.name)[1].lower()
                     _neuer_dateiname = f"{uuid.uuid4().hex[:10]}{_ext}"
@@ -2346,23 +2474,41 @@ def seite_einstellungen():
     _rn = st.session_state["rollennamen"]
     _rf = st.session_state["rollenfarben"]
 
+    st.markdown(
+        f"""
+        <style>
+        div[class*="st-key-pe_card_einst_1"], div[class*="st-key-pe_card_einst_2"] {{
+            background: var(--pe-card);
+            border: 1px solid var(--pe-border);
+            border-radius: var(--pe-radius-md);
+            box-shadow: var(--pe-shadow);
+            padding: 1.1rem 1.2rem 1.3rem 1.2rem;
+        }}
+        div[class*="st-key-pe_card_einst_1"] {{ border-top: 5px solid {farbe(ELTERNTEIL_1)} !important; }}
+        div[class*="st-key-pe_card_einst_2"] {{ border-top: 5px solid {farbe(ELTERNTEIL_2)} !important; }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
     _e1, _e2 = st.columns(2)
     with _e1:
-        st.markdown(f"**{anzeige(ELTERNTEIL_1)}**")
-        _neuer_name_1 = st.text_input(
-            "Anzeigename", value=_rn.get(ELTERNTEIL_1, ELTERNTEIL_1), key="einst_name_1",
-        )
-        _neue_farbe_1 = st.color_picker(
-            "Farbe", value=_rf.get(ELTERNTEIL_1, VATER_FARBE), key="einst_farbe_1",
-        )
+        with st.container(key="pe_card_einst_1"):
+            st.markdown(f"**{anzeige(ELTERNTEIL_1)}**")
+            _neuer_name_1 = st.text_input(
+                "Anzeigename", value=_rn.get(ELTERNTEIL_1, ELTERNTEIL_1), key="einst_name_1",
+            )
+            _neue_farbe_1 = st.color_picker(
+                "Farbe", value=_rf.get(ELTERNTEIL_1, VATER_FARBE), key="einst_farbe_1",
+            )
     with _e2:
-        st.markdown(f"**{anzeige(ELTERNTEIL_2)}**")
-        _neuer_name_2 = st.text_input(
-            "Anzeigename", value=_rn.get(ELTERNTEIL_2, ELTERNTEIL_2), key="einst_name_2",
-        )
-        _neue_farbe_2 = st.color_picker(
-            "Farbe", value=_rf.get(ELTERNTEIL_2, MUTTER_FARBE), key="einst_farbe_2",
-        )
+        with st.container(key="pe_card_einst_2"):
+            st.markdown(f"**{anzeige(ELTERNTEIL_2)}**")
+            _neuer_name_2 = st.text_input(
+                "Anzeigename", value=_rn.get(ELTERNTEIL_2, ELTERNTEIL_2), key="einst_name_2",
+            )
+            _neue_farbe_2 = st.color_picker(
+                "Farbe", value=_rf.get(ELTERNTEIL_2, MUTTER_FARBE), key="einst_farbe_2",
+            )
 
     _name_1_final = _neuer_name_1.strip() or ELTERNTEIL_1
     _name_2_final = _neuer_name_2.strip() or ELTERNTEIL_2

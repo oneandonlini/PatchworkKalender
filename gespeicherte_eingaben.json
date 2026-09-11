@@ -1,0 +1,203 @@
+{
+  "rollennamen": {
+    "Elternteil 1": "Elternteil 1",
+    "Elternteil 2": "Elternteil 2"
+  },
+  "rollenfarben": {
+    "Elternteil 1": "#3D5A80",
+    "Elternteil 2": "#E07A5F"
+  },
+  "start_date": "2026-09-11",
+  "end_date": "2027-01-09",
+  "ziel_vater_pct": 60,
+  "wechseltag": "Mittwoch",
+  "wunsch_vater": [],
+  "verzicht_vater": [
+    {
+      "datum": "2026-09-03",
+      "notiz": ""
+    },
+    {
+      "datum": "2026-09-05",
+      "notiz": "festival"
+    }
+  ],
+  "wunsch_mutter": [],
+  "verzicht_mutter": [
+    {
+      "datum": "2026-10-07",
+      "notiz": ""
+    }
+  ],
+  "ferien": [
+    {
+      "name": "Winterferien 2026 (Hamburg)",
+      "start": "2026-01-30",
+      "end": "2026-01-30",
+      "regel": "eigener_wechseltag",
+      "erste_haelfte": "Elternteil 2",
+      "ferien_wechseltag": "Samstag"
+    },
+    {
+      "name": "Osterferien 2026 (Hamburg)",
+      "start": "2026-03-02",
+      "end": "2026-03-13",
+      "regel": "vater",
+      "erste_haelfte": "Elternteil 1",
+      "ferien_wechseltag": "Mittwoch"
+    },
+    {
+      "name": "Pfingstferien 2026 (Hamburg)",
+      "start": "2026-05-11",
+      "end": "2026-05-15",
+      "regel": "mutter",
+      "erste_haelfte": "Elternteil 1",
+      "ferien_wechseltag": "Mittwoch"
+    },
+    {
+      "name": "Sommerferien 2026 (Hamburg)",
+      "start": "2026-07-09",
+      "end": "2026-08-19",
+      "regel": "eigener_wechseltag",
+      "erste_haelfte": "Elternteil 2",
+      "ferien_wechseltag": "Sonntag"
+    },
+    {
+      "name": "Herbstferien 2026 (Hamburg)",
+      "start": "2026-10-19",
+      "end": "2026-10-30",
+      "regel": "rotation",
+      "erste_haelfte": "Elternteil 1",
+      "ferien_wechseltag": "Mittwoch"
+    },
+    {
+      "name": "Weihnachtsferien 2026/27 (Hamburg)",
+      "start": "2026-12-21",
+      "end": "2027-01-01",
+      "regel": "rotation",
+      "erste_haelfte": "Elternteil 1",
+      "ferien_wechseltag": "Mittwoch"
+    },
+    {
+      "name": "Winterferien 2027 (Hamburg)",
+      "start": "2027-01-29",
+      "end": "2027-01-29",
+      "regel": "rotation",
+      "erste_haelfte": "Elternteil 1",
+      "ferien_wechseltag": "Mittwoch"
+    },
+    {
+      "name": "Osterferien 2027 (Hamburg)",
+      "start": "2027-03-01",
+      "end": "2027-03-12",
+      "regel": "rotation",
+      "erste_haelfte": "Elternteil 1",
+      "ferien_wechseltag": "Mittwoch"
+    },
+    {
+      "name": "Pfingstferien 2027 (Hamburg)",
+      "start": "2027-05-07",
+      "end": "2027-05-15",
+      "regel": "rotation",
+      "erste_haelfte": "Elternteil 1",
+      "ferien_wechseltag": "Mittwoch"
+    },
+    {
+      "name": "Sommerferien 2027 (Hamburg)",
+      "start": "2027-07-01",
+      "end": "2027-08-11",
+      "regel": "eigener_wechseltag",
+      "erste_haelfte": "Elternteil 1",
+      "ferien_wechseltag": "Samstag"
+    },
+    {
+      "name": "Herbstferien 2027 (Hamburg)",
+      "start": "2027-10-11",
+      "end": "2027-10-22",
+      "regel": "rotation",
+      "erste_haelfte": "Elternteil 1",
+      "ferien_wechseltag": "Mittwoch"
+    },
+    {
+      "name": "Weihnachtsferien 2027 (Hamburg)",
+      "start": "2027-12-20",
+      "end": "2027-12-31",
+      "regel": "rotation",
+      "erste_haelfte": "Elternteil 1",
+      "ferien_wechseltag": "Mittwoch"
+    }
+  ],
+  "feiertage": [],
+  "feste_wochentage": {},
+  "wechselmodell": "block",
+  "wochenplan": {
+    "Montag": "Wechselt wöchentlich",
+    "Dienstag": "Wechselt wöchentlich",
+    "Mittwoch": "Wechselt wöchentlich",
+    "Donnerstag": "Wechselt wöchentlich",
+    "Freitag": "Wechselt wöchentlich",
+    "Samstag": "Wechselt wöchentlich",
+    "Sonntag": "Wechselt wöchentlich"
+  },
+  "wechsel_start_parent": "Elternteil 1",
+  "wechselzeit": "18:00:00",
+  "wechselzeit_ausnahmen": {},
+  "kinder": [
+    "Name Kind 1"
+  ],
+  "ausgaben": [
+    {
+      "id": "088e205f",
+      "datum": "2026-09-07",
+      "beschreibung": "schuhe",
+      "betrag": 35.9,
+      "bezahlt_von": "Elternteil 1",
+      "anteil_vater_pct": 50.0,
+      "kind": [
+        "Name Kind 1"
+      ]
+    },
+    {
+      "id": "8972d4cf",
+      "datum": "2026-09-07",
+      "beschreibung": "Hose",
+      "betrag": 70.0,
+      "bezahlt_von": "Elternteil 2",
+      "anteil_vater_pct": 39.0,
+      "kind": [
+        "Name Kind 1"
+      ]
+    }
+  ],
+  "ausgleichszahlungen": [],
+  "dokumente": [
+    {
+      "id": "75660c5f",
+      "titel": "Stundenplan",
+      "dateiname": "483f888bc0.png",
+      "original_name": "Stundenplan-Vorlage-02.png",
+      "hochgeladen_am": "2026-09-11"
+    }
+  ],
+  "notfallkontakte": [
+    {
+      "id": "5a0b63a8",
+      "name": "Oma Erika",
+      "rolle": "Oma",
+      "telefon": "12235",
+      "notiz": "nur werkttags"
+    }
+  ],
+  "uebergabe_checkliste": [
+    {
+      "id": "ed8cba97",
+      "text": "Krankenkassenkarte",
+      "erledigt": false
+    },
+    {
+      "id": "7345ab01",
+      "text": "Sonnenhut",
+      "erledigt": false
+    }
+  ]
+}
