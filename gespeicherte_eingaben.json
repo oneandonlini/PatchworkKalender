@@ -9,7 +9,7 @@
   },
   "start_date": "2026-09-14",
   "end_date": "2027-01-12",
-  "ziel_vater_pct": 60,
+  "ziel_vater_pct": 48,
   "wechseltag": "Mittwoch",
   "wunsch_vater": [],
   "verzicht_vater": [
@@ -150,7 +150,7 @@
     "2026-12-03": "18:00:00"
   },
   "kinder": [
-    "Name Kind 1"
+    "Mats"
   ],
   "ausgaben": [
     {
@@ -218,6 +218,29 @@
     {
       "id": "24b0943f",
       "text": "Zahlschloss Mats 12234"
+    }
+  ],
+  "journal_eintraege": [
+    {
+      "id": "02442a61",
+      "datum": "2026-09-14",
+      "von": "Elternteil 1",
+      "kind": "Mats",
+      "text": "heute Bauchschmerzen, früher aus Schule zurück"
+    },
+    {
+      "id": "306d7214",
+      "datum": "2026-09-03",
+      "von": "Elternteil 1",
+      "kind": "Mats",
+      "text": "erste Milchzahn ist raus !"
+    },
+    {
+      "id": "4bb4c60b",
+      "datum": "2026-09-08",
+      "von": "Elternteil 2",
+      "kind": "Mats",
+      "text": "Mats hat eine 4 in Mathe und ist enttäuscht"
     }
   ]
 }

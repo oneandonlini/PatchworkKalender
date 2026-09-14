@@ -780,17 +780,39 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-if os.path.exists(BANNER_DATEI):
-    st.image(BANNER_DATEI, width=340)
-else:
-    st.markdown(
-        """
-        <div style="font-size:2.1rem;font-weight:800;letter-spacing:-0.03em;line-height:1.15;">
-          PatchEasy
+# Kopfzeile als Icon (inline SVG) + echter HTML-Text statt Raster-Grafik: ein eingebettetes
+# PNG-Banner wird von Streamlit auf eine kleine Breite herunterskaliert (hier vorher 340px bei
+# einer 1930px breiten Quelldatei) - beim Icon (grosse Flaechen) faellt das kaum auf, aber duenne
+# Schriftkonturen verlieren dabei sichtbar an Kontrast ("verwaessert"). Echter Text bleibt dagegen
+# bei jeder Bildschirmgroesse/jedem Zoom gestochen scharf, da der Browser ihn selbst rendert.
+_HEADER_SVG_ICON = (
+    '<svg width="60" height="60" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">'
+    '<path d="M256 30 L60 262 L60 438 Q60 480 102 480 L256 480 Z" fill="#534AB7"/>'
+    '<path d="M256 30 L452 262 L452 438 Q452 480 410 480 L256 480 Z" fill="#0F5C66"/>'
+    '<circle cx="256" cy="175" r="52" fill="#FFFFFF"/>'
+    '<g transform="translate(152.8,244.2) scale(8.6)">'
+    '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09'
+    'C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#FFFFFF"/>'
+    '</g>'
+    '</svg>'
+)
+st.markdown(
+    f"""
+    <div style="display:flex; align-items:center; gap:16px; margin-bottom:2px;">
+      <div style="flex-shrink:0; line-height:0;">{_HEADER_SVG_ICON}</div>
+      <div>
+        <div style="font-size:2.5rem; font-weight:800; line-height:1; letter-spacing:-0.02em;">
+          <span style="color:var(--pe-purple);">Patch</span><span style="color:var(--pe-teal);">Easy</span>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        <div style="font-size:0.78rem; font-weight:600; letter-spacing:0.05em; text-transform:uppercase;
+                    color:var(--pe-ink-soft); margin-top:3px;">
+          Einfach für Eltern · Gut für Kinder
+        </div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 st.markdown(
     f"""
     <div style="font-size:0.95rem;font-weight:600;color:var(--pe-ink-soft);margin-top:2px;margin-bottom:14px;
@@ -831,6 +853,8 @@ st.session_state.setdefault("nk_form_key", 0)  # zaehlt hoch, um das Kontaktform
 st.session_state.setdefault("checkliste_form_key", 0)  # zaehlt hoch, um das Eingabefeld nach dem Hinzufuegen zurueckzusetzen
 st.session_state.setdefault("checkliste_reset_key", 0)  # zaehlt hoch, um alle Haekchen ueber "Zuruecksetzen" zu leeren
 st.session_state.setdefault("feste_info_form_key", 0)  # zaehlt hoch, um das Eingabefeld nach dem Hinzufuegen zurueckzusetzen
+st.session_state.setdefault("journal_eintraege", [])  # [{"id","datum","von","kind","text"}] - laufendes Protokoll ueber das Kind, damit beide Elternteile auf dem gleichen Stand bleiben
+st.session_state.setdefault("journal_form_key", 0)  # zaehlt hoch, um das Journal-Formular nach dem Speichern zurueckzusetzen
 
 
 def lade_gespeicherte_daten():
@@ -1025,6 +1049,17 @@ def lade_gespeicherte_daten():
             }
             for n in daten["feste_infos"]
         ]
+    if "journal_eintraege" in daten:
+        st.session_state["journal_eintraege"] = [
+            {
+                "id": j.get("id") or uuid.uuid4().hex[:8],
+                "datum": dt.date.fromisoformat(j["datum"]) if j.get("datum") else dt.date.today(),
+                "von": _migriere_elternteil(j.get("von")) if _migriere_elternteil(j.get("von")) in (ELTERNTEIL_1, ELTERNTEIL_2) else ELTERNTEIL_1,
+                "kind": j.get("kind", ""),
+                "text": j.get("text", ""),
+            }
+            for j in daten["journal_eintraege"]
+        ]
 
 
 def speichere_daten():
@@ -1085,6 +1120,13 @@ def speichere_daten():
         "notfallkontakte": st.session_state["notfallkontakte"],
         "uebergabe_checkliste": st.session_state["uebergabe_checkliste"],
         "feste_infos": st.session_state["feste_infos"],
+        "journal_eintraege": [
+            {
+                "id": j["id"], "datum": j["datum"].isoformat(), "von": j["von"],
+                "kind": j.get("kind", ""), "text": j["text"],
+            }
+            for j in st.session_state["journal_eintraege"]
+        ],
     }
     try:
         with open(DATEN_DATEI, "w", encoding="utf-8") as f:
@@ -1664,12 +1706,6 @@ def seite_kalender():
         "Feste Wunsch-/Verzichtstage haben Vorrang, alle übrigen Tage werden am Wechseltag so "
         "verteilt, dass sich die Zielquote über den Zeitraum einpendelt."
     )
-    st.info(
-        "Vereinfachung in dieser Version: eine gemeinsame Rotation für alle Kinder. "
-        "Unterschiedliche Zeiten je Kind wären ein möglicher nächster Schritt.",
-        icon=":material/info:",
-    )
-
     # ---------- Auswertung ----------
     gesamt = len(df)
     vater_n = int((df["elternteil"] == "Elternteil 1").sum())
@@ -2000,44 +2036,6 @@ def seite_finanzen():
     _fc3.metric(f"Anteil {anzeige(ELTERNTEIL_2)}", euro(_mutter_anteil_gesamt))
 
     st.divider()
-
-    with st.expander(":material/family_restroom: Kinder verwalten", expanded=False):
-        st.caption(
-            "Namen der Kinder, für die Ausgaben erfasst werden können – hilfreich, wenn es "
-            "mehrere gibt und ihr später sehen wollt, wofür wie viel ausgegeben wurde."
-        )
-        _kind_neu_col1, _kind_neu_col2 = st.columns([4, 1])
-        _kind_name_neu = _kind_neu_col1.text_input(
-            "Name hinzufügen", key="kind_name_neu", placeholder="z. B. Mia",
-            label_visibility="collapsed",
-        )
-        if _kind_neu_col2.button(":material/add: Hinzufügen", key="kind_hinzufuegen", type="primary"):
-            _name = _kind_name_neu.strip()
-            if not _name:
-                st.warning("Bitte einen Namen eingeben.")
-            elif _name in st.session_state["kinder"]:
-                st.warning("Dieses Kind gibt es schon.")
-            else:
-                st.session_state["kinder"].append(_name)
-                # Das Ausgabe-Formular unten ist ein Expander - sein Inhalt (inkl. der
-                # "fa_kind"-Mehrfachauswahl) wird bei JEDEM Durchlauf ausgefuehrt, auch wenn er
-                # eingeklappt ist. Der Widget-Key wird also schon beim allerersten Laden belegt.
-                # Damit ein neu hinzugefuegtes Kind in der Auswahl auch wirklich mit vorausgewaehlt
-                # ist, den Key hier direkt auf die neue vollstaendige Liste setzen (statt ihn nur
-                # zu loeschen - das reicht bei diesem Widget-Typ nicht zuverlaessig aus).
-                st.session_state["fa_kind"] = list(st.session_state["kinder"])
-                st.rerun()
-        if not st.session_state["kinder"]:
-            st.caption("Noch keine Kinder erfasst – neue Ausgaben gelten dann automatisch für „Kind”.")
-        for _k in list(st.session_state["kinder"]):
-            _kr1, _kr2 = st.columns([4, 1])
-            _kr1.write(_k)
-            if _kr2.button(":material/delete:", key=f"rm_kind_{_k}"):
-                st.session_state["kinder"] = [x for x in st.session_state["kinder"] if x != _k]
-                st.session_state["fa_kind"] = [
-                    x for x in st.session_state.get("fa_kind", []) if x != _k
-                ]
-                st.rerun()
 
     _kinder_optionen = st.session_state["kinder"] or ["Kind"]
 
@@ -2560,6 +2558,99 @@ def seite_pinnwand():
     speichere_daten()
 
 
+def seite_journal():
+    st.subheader(":material/auto_stories: Journal")
+    st.caption(
+        "Kleine Notizen über das Kind, die beide Elternteile mitbekommen sollen – was passiert "
+        "ist, was sich verändert, was auffällt. Damit niemand etwas verpasst, nur weil das Kind "
+        "gerade beim anderen Elternteil war."
+    )
+
+    _eintraege = st.session_state["journal_eintraege"]
+    _kinder_optionen = st.session_state["kinder"] or ["Kind"]
+
+    # ---------- Neuer Eintrag (oben, da zentrale Aktion dieser Seite) ----------
+    with st.container(key="pe_card_journal_neu"):
+        st.markdown("##### :material/edit_note: Neuer Eintrag")
+        _j_suffix = st.session_state["journal_form_key"]
+        _jc1, _jc2 = st.columns(2)
+        _j_datum = _jc1.date_input("Datum", value=dt.date.today(), key=f"j_datum_{_j_suffix}")
+        _j_von = _jc2.radio(
+            "Von", [ELTERNTEIL_1, ELTERNTEIL_2], key=f"j_von_{_j_suffix}",
+            horizontal=True, format_func=anzeige,
+        )
+        _j_kind = st.selectbox("Für welches Kind?", _kinder_optionen, key=f"j_kind_{_j_suffix}")
+        _j_text = st.text_area(
+            "Was gibt's zu berichten?", key=f"j_text_{_j_suffix}", height=100,
+            placeholder="z. B. Hatte heute ihren ersten Schwimmkurs, war ganz aufgeregt und hat "
+            "sich super angestellt.",
+        )
+        if st.button(":material/add: Eintrag speichern", key="journal_speichern", type="primary"):
+            if _j_text.strip():
+                st.session_state["journal_eintraege"].append({
+                    "id": uuid.uuid4().hex[:8],
+                    "datum": _j_datum,
+                    "von": _j_von,
+                    "kind": _j_kind,
+                    "text": _j_text.strip(),
+                })
+                st.session_state["journal_form_key"] += 1
+                speichere_daten()
+                st.rerun()
+            else:
+                st.warning("Bitte einen Text eingeben.")
+
+    st.divider()
+
+    # ---------- Bisherige Eintraege (neueste zuerst) ----------
+    if not _eintraege:
+        st.caption("Noch keine Einträge – der erste kommt bestimmt bald.")
+        speichere_daten()
+        return
+
+    if len(_kinder_optionen) > 1:
+        _vorkommende_kinder = sorted({e.get("kind") or "Kind" for e in _eintraege})
+        _filter_kinder = st.multiselect(
+            "Nach Kind filtern", _vorkommende_kinder, default=list(_vorkommende_kinder),
+            key="journal_filter_kind",
+        )
+        _gefiltert = [e for e in _eintraege if (e.get("kind") or "Kind") in _filter_kinder]
+    else:
+        _gefiltert = _eintraege
+
+    _sortiert = sorted(_gefiltert, key=lambda x: x["datum"], reverse=True)
+    if not _sortiert:
+        st.caption("Keine Einträge für diese Auswahl.")
+
+    for _e in _sortiert:
+        with st.container(key=f"pe_card_journal_{_e['id']}"):
+            _hc1, _hc2 = st.columns([6, 1])
+            with _hc1:
+                _autor_farbe = farbe(_e["von"])
+                _datum_label = f"{WOCHENTAGE[_e['datum'].weekday()][:2]}, {_e['datum'].strftime('%d.%m.%Y')}"
+                _kind_label = f" · {_e['kind']}" if _e.get("kind") else ""
+                st.markdown(
+                    "<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;'>"
+                    f"<span style='font-size:0.8rem;color:var(--pe-ink-soft);font-weight:600;'>"
+                    f"{_datum_label}{_kind_label}</span>"
+                    f"<span style='display:inline-block;padding:1px 10px;border-radius:999px;"
+                    f"background:{_autor_farbe};color:white;font-size:0.7rem;font-weight:700;'>"
+                    f"{anzeige(_e['von'])}</span>"
+                    "</div>",
+                    unsafe_allow_html=True,
+                )
+            with _hc2:
+                if st.button(":material/delete:", key=f"del_journal_{_e['id']}"):
+                    st.session_state["journal_eintraege"] = [
+                        x for x in st.session_state["journal_eintraege"] if x["id"] != _e["id"]
+                    ]
+                    speichere_daten()
+                    st.rerun()
+            st.write(_e["text"])
+
+    speichere_daten()
+
+
 def seite_einstellungen():
     st.subheader(":material/tune: Grundeinstellungen")
     st.caption(
@@ -2641,9 +2732,52 @@ def seite_einstellungen():
         st.rerun()
 
     st.divider()
+
+    st.markdown("#### Kinder")
     st.caption(
-        "Weitere Grundeinstellungen – Zeitraum, Wechselrhythmus, Kinder und mehr – findet ihr "
-        "auf der Kalender- bzw. Finanzen-Seite."
+        "Namen der Kinder, für die ihr Journal-Einträge schreiben und Ausgaben erfassen könnt – "
+        "hilfreich, wenn es mehrere gibt und ihr später sehen wollt, wer wofür wie viel "
+        "ausgegeben hat oder was wen betrifft."
+    )
+    _kind_neu_col1, _kind_neu_col2 = st.columns([4, 1])
+    _kind_name_neu = _kind_neu_col1.text_input(
+        "Name hinzufügen", key="kind_name_neu", placeholder="z. B. Mia",
+        label_visibility="collapsed",
+    )
+    if _kind_neu_col2.button(":material/add: Hinzufügen", key="kind_hinzufuegen", type="primary"):
+        _name = _kind_name_neu.strip()
+        if not _name:
+            st.warning("Bitte einen Namen eingeben.")
+        elif _name in st.session_state["kinder"]:
+            st.warning("Dieses Kind gibt es schon.")
+        else:
+            st.session_state["kinder"].append(_name)
+            # Die Ausgabe- bzw. Journal-Formulare auf den anderen Seiten sind Expander - ihr Inhalt
+            # (inkl. der "fa_kind"-Mehrfachauswahl) wird bei JEDEM Durchlauf ausgefuehrt, auch wenn
+            # er eingeklappt ist. Der Widget-Key wird also schon beim allerersten Laden belegt.
+            # Damit ein neu hinzugefuegtes Kind in der Auswahl auch wirklich mit vorausgewaehlt
+            # ist, den Key hier direkt auf die neue vollstaendige Liste setzen (statt ihn nur
+            # zu loeschen - das reicht bei diesem Widget-Typ nicht zuverlaessig aus).
+            st.session_state["fa_kind"] = list(st.session_state["kinder"])
+            speichere_daten()
+            st.rerun()
+    if not st.session_state["kinder"]:
+        st.caption("Noch keine Kinder erfasst – neue Ausgaben gelten dann automatisch für „Kind”.")
+    for _k in list(st.session_state["kinder"]):
+        _kr1, _kr2 = st.columns([4, 1])
+        _kr1.write(_k)
+        if _kr2.button(":material/delete:", key=f"rm_kind_{_k}"):
+            st.session_state["kinder"] = [x for x in st.session_state["kinder"] if x != _k]
+            st.session_state["fa_kind"] = [
+                x for x in st.session_state.get("fa_kind", []) if x != _k
+            ]
+            speichere_daten()
+            st.rerun()
+
+    st.divider()
+    st.caption(
+        "Weitere Grundeinstellungen – Zeitraum und Wechselrhythmus – findet ihr auf der "
+        "Kalender-Seite."
     )
 
 
@@ -2652,6 +2786,7 @@ pg = st.navigation(
         st.Page(seite_kalender, title="Kalender", icon=":material/calendar_month:", default=True),
         st.Page(seite_finanzen, title="Finanzen", icon=":material/account_balance_wallet:"),
         st.Page(seite_pinnwand, title="Pinnwand", icon=":material/push_pin:"),
+        st.Page(seite_journal, title="Journal", icon=":material/auto_stories:"),
         st.Page(seite_einstellungen, title="Einstellungen", icon=":material/tune:"),
     ],
     position="top",
