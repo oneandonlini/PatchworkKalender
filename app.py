@@ -2010,7 +2010,7 @@ def seite_kalender():
 
 
 def seite_finanzen():
-    st.subheader(":material/account_balance_wallet: Finanzen")
+    st.subheader(":material/account_balance_wallet: Kostenteilung")
     st.caption(
         "Gemeinsame Ausgaben fürs Kind eintragen und sehen, wer wem noch was schuldet – "
         "unabhängig vom Betreuungskalender."
@@ -2784,7 +2784,7 @@ def seite_einstellungen():
 pg = st.navigation(
     [
         st.Page(seite_kalender, title="Kalender", icon=":material/calendar_month:", default=True),
-        st.Page(seite_finanzen, title="Finanzen", icon=":material/account_balance_wallet:"),
+        st.Page(seite_finanzen, title="Kostenteilung", icon=":material/account_balance_wallet:"),
         st.Page(seite_pinnwand, title="Pinnwand", icon=":material/push_pin:"),
         st.Page(seite_journal, title="Journal", icon=":material/auto_stories:"),
         st.Page(seite_einstellungen, title="Einstellungen", icon=":material/tune:"),
