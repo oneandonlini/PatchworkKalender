@@ -1,14 +1,14 @@
 {
   "rollennamen": {
-    "Elternteil 1": "Elternteil 1",
-    "Elternteil 2": "Elternteil 2"
+    "Elternteil 1": "Jonas",
+    "Elternteil 2": "Nina"
   },
   "rollenfarben": {
     "Elternteil 1": "#3D5A80",
     "Elternteil 2": "#E07A5F"
   },
-  "start_date": "2026-09-11",
-  "end_date": "2027-01-09",
+  "start_date": "2026-09-14",
+  "end_date": "2027-01-12",
   "ziel_vater_pct": 60,
   "wechseltag": "Mittwoch",
   "wunsch_vater": [],
@@ -22,7 +22,12 @@
       "notiz": "festival"
     }
   ],
-  "wunsch_mutter": [],
+  "wunsch_mutter": [
+    {
+      "datum": "2026-12-03",
+      "notiz": ""
+    }
+  ],
   "verzicht_mutter": [
     {
       "datum": "2026-10-07",
@@ -141,7 +146,9 @@
   },
   "wechsel_start_parent": "Elternteil 1",
   "wechselzeit": "18:00:00",
-  "wechselzeit_ausnahmen": {},
+  "wechselzeit_ausnahmen": {
+    "2026-12-03": "18:00:00"
+  },
   "kinder": [
     "Name Kind 1"
   ],
@@ -172,11 +179,11 @@
   "ausgleichszahlungen": [],
   "dokumente": [
     {
-      "id": "75660c5f",
-      "titel": "Stundenplan",
-      "dateiname": "483f888bc0.png",
-      "original_name": "Stundenplan-Vorlage-02.png",
-      "hochgeladen_am": "2026-09-11"
+      "id": "740cac7e",
+      "titel": "Stundenplan Mats",
+      "dateiname": "ec0a61da27.jpg",
+      "original_name": "StundenplanMats2627.JPG",
+      "hochgeladen_am": "2026-09-14"
     }
   ],
   "notfallkontakte": [
@@ -186,6 +193,13 @@
       "rolle": "Oma",
       "telefon": "12235",
       "notiz": "nur werkttags"
+    },
+    {
+      "id": "df5e963b",
+      "name": "Schule bei Krankmeldung",
+      "rolle": "Schule",
+      "telefon": "040 123465",
+      "notiz": "vor 9 Uhr anrufen"
     }
   ],
   "uebergabe_checkliste": [
@@ -198,6 +212,12 @@
       "id": "7345ab01",
       "text": "Sonnenhut",
       "erledigt": false
+    }
+  ],
+  "feste_infos": [
+    {
+      "id": "24b0943f",
+      "text": "Zahlschloss Mats 12234"
     }
   ]
 }

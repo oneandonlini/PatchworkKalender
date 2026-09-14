@@ -29,6 +29,43 @@ VATER_FARBE = "#3D5A80"  # Standardfarbe fuer Elternteil 1 (Name beibehalten, um
 MUTTER_FARBE = "#E07A5F"  # Standardfarbe fuer Elternteil 2
 FERIEN_FARBE = "#F2CC8F"
 
+# Moderne Linien-Icons fuer die Kalender-Legende (ersetzen die aelter wirkenden Emojis).
+# Gleicher Stil wie die Pinnwand-Icons weiter unten: 24x24 Viewbox, currentColor-Konturen.
+_KAL_SVG_FERIEN = (
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<path d="M4 20c3-6 6-14 6-14M10 6c3.5-1.5 8.5 1 8 6.5-5.5 1-9-1-9-1" stroke="currentColor" '
+    'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+    '<path d="M3 20.5h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+)
+_KAL_SVG_FEIERTAG = (
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<path d="M5 21V4M5 4l6 3.2L5 10.4M5 13.5l8-3v6.2l-8-2.5" stroke="currentColor" stroke-width="1.6" '
+    'stroke-linecap="round" stroke-linejoin="round"/></svg>'
+)
+_KAL_SVG_WUNSCH = (
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<path d="M12 3.5l2.5 5.4 5.9.7-4.4 4 1.2 5.9-5.2-3-5.2 3 1.2-5.9-4.4-4 5.9-.7z" stroke="currentColor" '
+    'stroke-width="1.5" stroke-linejoin="round"/></svg>'
+)
+_KAL_SVG_VERZICHT = (
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<rect x="3.5" y="4.5" width="17" height="16" rx="2.3" stroke="currentColor" stroke-width="1.6"/>'
+    '<path d="M3.5 9.5h17" stroke="currentColor" stroke-width="1.6"/>'
+    '<path d="M8.5 14.5l7 5.3M15.5 14.5l-7 5.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'
+    '</svg>'
+)
+_KAL_SVG_KONFLIKT = (
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<path d="M12 3.5l9.5 16.5h-19z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>'
+    '<path d="M12 10v4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>'
+    '<circle cx="12" cy="17" r="1" fill="currentColor"/></svg>'
+)
+_KAL_SVG_WECHSEL = (
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<path d="M4 8h13.5M14.5 4.5L18 8l-3.5 3.5M20 16H6.5M9.5 12.5L6 16l3.5 3.5" stroke="currentColor" '
+    'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+)
+
 
 def anzeige(elternteil):
     """Gibt den von der Nutzerin frei waehlbaren Anzeigenamen fuer 'Elternteil 1'/'Elternteil 2'
@@ -788,10 +825,12 @@ st.session_state.setdefault("ausgleichszahlungen", [])  # [{"id","datum","von","
 st.session_state.setdefault("dokumente", [])  # [{"id","titel","dateiname","original_name","hochgeladen_am"}]
 st.session_state.setdefault("notfallkontakte", [])  # [{"id","name","rolle","telefon","notiz"}]
 st.session_state.setdefault("uebergabe_checkliste", [])  # [{"id","text","erledigt"}] - was beim naechsten Wechsel mit soll
+st.session_state.setdefault("feste_infos", [])  # [{"id","text"}] - Dinge, die immer gelten und nur ab und an angepasst werden (z. B. Zahlencode Fahrradschloss)
 st.session_state.setdefault("pw_doku_form_key", 0)  # zaehlt hoch, um Titel-Feld + file_uploader nach dem Speichern zurueckzusetzen
 st.session_state.setdefault("nk_form_key", 0)  # zaehlt hoch, um das Kontaktformular nach dem Speichern zurueckzusetzen
 st.session_state.setdefault("checkliste_form_key", 0)  # zaehlt hoch, um das Eingabefeld nach dem Hinzufuegen zurueckzusetzen
 st.session_state.setdefault("checkliste_reset_key", 0)  # zaehlt hoch, um alle Haekchen ueber "Zuruecksetzen" zu leeren
+st.session_state.setdefault("feste_info_form_key", 0)  # zaehlt hoch, um das Eingabefeld nach dem Hinzufuegen zurueckzusetzen
 
 
 def lade_gespeicherte_daten():
@@ -978,6 +1017,14 @@ def lade_gespeicherte_daten():
             }
             for p in daten["uebergabe_checkliste"]
         ]
+    if "feste_infos" in daten:
+        st.session_state["feste_infos"] = [
+            {
+                "id": n.get("id") or uuid.uuid4().hex[:8],
+                "text": n.get("text", ""),
+            }
+            for n in daten["feste_infos"]
+        ]
 
 
 def speichere_daten():
@@ -1037,6 +1084,7 @@ def speichere_daten():
         "dokumente": st.session_state["dokumente"],
         "notfallkontakte": st.session_state["notfallkontakte"],
         "uebergabe_checkliste": st.session_state["uebergabe_checkliste"],
+        "feste_infos": st.session_state["feste_infos"],
     }
     try:
         with open(DATEN_DATEI, "w", encoding="utf-8") as f:
@@ -1407,7 +1455,7 @@ def seite_kalender():
 
     if st.session_state["wechselmodell"] == "block":
         st.sidebar.header("Feste Wochentage")
-        with st.sidebar.expander("📌 Wiederkehrende Wochentags-Regel", expanded=False):
+        with st.sidebar.expander(":material/event_repeat: Wiederkehrende Wochentags-Regel", expanded=False):
             st.caption(
                 f"Bestimmte Wochentage sind unabhängig vom Wechselrhythmus immer bei einem "
                 f"Elternteil (z. B. jeden Mittwoch bei {anzeige(ELTERNTEIL_1)}). Feste Wunsch-/Verzichtstage und "
@@ -1451,7 +1499,7 @@ def seite_kalender():
             "berücksichtigt). Bei wichtigen Entscheidungen bitte offiziell gegenprüfen."
         )
         bc1, bc2 = st.columns(2)
-        if bc1.button("📥 Ferien laden", disabled=bundesland is None, width="stretch", type="primary"):
+        if bc1.button(":material/download: Ferien laden", disabled=bundesland is None, width="stretch", type="primary"):
             vorhandene = {(f["name"], f["start"], f["end"]) for f in st.session_state["ferien"]}
             neu = 0
             for name, s, e in FERIEN_DATEN[bundesland]:
@@ -1461,7 +1509,7 @@ def seite_kalender():
                     neu += 1
             st.success(f"{neu} Ferienzeiten hinzugefügt.")
             st.rerun()
-        if bc2.button("📥 Feiertage laden", disabled=bundesland is None, width="stretch", type="primary"):
+        if bc2.button(":material/download: Feiertage laden", disabled=bundesland is None, width="stretch", type="primary"):
             vorhandene_ft = {(f["name"], f["datum"]) for f in st.session_state["feiertage"]}
             neu_ft = 0
             for name, d in FEIERTAGE_DATEN[bundesland]:
@@ -1487,7 +1535,7 @@ def seite_kalender():
         if f_start <= f_end:
             dauer = (f_end - f_start).days + 1
             if dauer > 40:
-                st.warning(f"⚠️ Das sind {dauer} Tage – Von/Bis wirklich richtig eingestellt?")
+                st.warning(f"Das sind {dauer} Tage – Von/Bis wirklich richtig eingestellt?", icon=":material/warning:")
             else:
                 st.caption(f"→ {dauer} Tag(e)")
         f_regel = st.selectbox(
@@ -1506,7 +1554,7 @@ def seite_kalender():
             f_ferien_wechseltag = st.selectbox(
                 "Wechseltag während dieser Ferienzeit", WOCHENTAGE, key="f_ferien_wechseltag",
             )
-        if st.button("➕ Ferien hinzufügen", type="primary"):
+        if st.button(":material/add: Ferien hinzufügen", type="primary"):
             if f_name and f_start <= f_end:
                 st.session_state["ferien"].append({
                     "name": f_name, "start": f_start, "end": f_end,
@@ -1517,7 +1565,7 @@ def seite_kalender():
             else:
                 st.warning("Bitte Name angeben und Start ≤ Ende.")
 
-    with st.sidebar.expander(f"📋 Alle Ferienzeiten & Regeln ({len(st.session_state['ferien'])})", expanded=False):
+    with st.sidebar.expander(f":material/list_alt: Alle Ferienzeiten & Regeln ({len(st.session_state['ferien'])})", expanded=False):
         st.caption("Gilt für alle Ferien – auch automatisch geladene. Feste Wunsch-/Verzichtstage haben trotzdem immer Vorrang.")
         if not st.session_state["ferien"]:
             st.write("Noch keine Ferienzeiten erfasst.")
@@ -1663,14 +1711,14 @@ def seite_kalender():
 
     feiertage_df = df[df["feiertag"].notna()]
     if len(feiertage_df) > 0:
-        with st.expander(f"🎉 Feiertage im Zeitraum ({len(feiertage_df)})"):
+        with st.expander(f":material/celebration: Feiertage im Zeitraum ({len(feiertage_df)})"):
             st.caption("Rein informativ – zeigt zur Orientierung, bei wem das Kind an diesem Feiertag laut Plan ist.")
             for _, row in feiertage_df.sort_values("datum").iterrows():
                 st.write(f"**{row['feiertag']}** – {row['datum'].strftime('%d.%m.%Y')} ({row['wochentag'][:2]}), bei {anzeige(row['elternteil'])}")
 
     konflikte = df[df["konflikt"].notna()]
     if len(konflikte) > 0:
-        st.warning(f"⚠️ {len(konflikte)} Tag(e) mit widersprüchlichen Angaben – bitte manuell klären.")
+        st.warning(f"{len(konflikte)} Tag(e) mit widersprüchlichen Angaben – bitte manuell klären.", icon=":material/warning:")
         with st.expander("Konflikte anzeigen"):
             st.dataframe(konflikte[["datum", "wochentag", "konflikt"]], hide_index=True, use_container_width=True)
 
@@ -1686,15 +1734,16 @@ def seite_kalender():
         "font-size:0.86rem; font-weight:500; color:#2B2A3D; box-shadow:0 1px 3px rgba(44,42,61,0.04);"
     )
     _legende_swatch = "display:inline-block; width:10px; height:10px; border-radius:50%; flex-shrink:0;"
+    _legende_icon = "display:inline-flex; color:var(--pe-ink-soft); flex-shrink:0;"
     legende = f"""
     <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center; flex-wrap:wrap;">
       <div style="{_chip_basis}"><span style="{_legende_swatch}background:{farbe(ELTERNTEIL_1)};"></span>{anzeige(ELTERNTEIL_1)}</div>
       <div style="{_chip_basis}"><span style="{_legende_swatch}background:{farbe(ELTERNTEIL_2)};"></span>{anzeige(ELTERNTEIL_2)}</div>
-      <div style="{_chip_basis}">🏖️ Ferien</div>
-      <div style="{_chip_basis}">🎉 Feiertag</div>
-      <div style="{_chip_basis}">🎯 Wunschtag</div>
-      <div style="{_chip_basis}">🚫 Verzichtstag</div>
-      <div style="{_chip_basis}">⚠️ Konflikt</div>
+      <div style="{_chip_basis}"><span style="{_legende_icon}">{_KAL_SVG_FERIEN}</span>Ferien</div>
+      <div style="{_chip_basis}"><span style="{_legende_icon}">{_KAL_SVG_FEIERTAG}</span>Feiertag</div>
+      <div style="{_chip_basis}"><span style="{_legende_icon}">{_KAL_SVG_WUNSCH}</span>Wunschtag</div>
+      <div style="{_chip_basis}"><span style="{_legende_icon}">{_KAL_SVG_VERZICHT}</span>Verzichtstag</div>
+      <div style="{_chip_basis}"><span style="{_legende_icon}">{_KAL_SVG_KONFLIKT}</span>Konflikt</div>
       <div style="{_chip_basis}">
         <span style="display:inline-block; width:18px; height:12px; border-radius:4px; flex-shrink:0;
                      background:linear-gradient(90deg, {farbe(ELTERNTEIL_1)} 50%, {farbe(ELTERNTEIL_2)} 50%);"></span>
@@ -1734,11 +1783,11 @@ def seite_kalender():
             f"({info['grund']}{': ' + info['notiz'] if isinstance(info['notiz'], str) and info['notiz'] else ''})"
         )
         if isinstance(info["ferien"], str):
-            st.caption(f"🏖️ Ferien: {info['ferien']}")
+            st.caption(f":material/beach_access: Ferien: {info['ferien']}")
         if isinstance(info["feiertag"], str):
-            st.caption(f"🎉 Feiertag: {info['feiertag']}")
+            st.caption(f":material/celebration: Feiertag: {info['feiertag']}")
         if info.get("wechsel"):
-            _wz_marker = "⏰" if info.get("wechselzeit_individuell") else "🔁"
+            _wz_marker = ":material/schedule:" if info.get("wechselzeit_individuell") else ":material/sync_alt:"
             _wz_hinweis = " (abweichende Zeit nur an diesem Tag)" if info.get("wechselzeit_individuell") else ""
             st.caption(f"{_wz_marker} Wechseltag – Übergabe ab {info.get('wechselzeit') or wechselzeit.strftime('%H:%M')} Uhr{_wz_hinweis}")
             _wz_aktuell = st.session_state["wechselzeit_ausnahmen"].get(tag, wechselzeit)
@@ -1746,30 +1795,30 @@ def seite_kalender():
                 "Übergabezeit an diesem Tag", value=_wz_aktuell, key="tag_panel_wechselzeit", step=900,
             )
             wzc1, wzc2 = st.columns(2)
-            if wzc1.button("⏰ Nur für diesen Tag übernehmen", key="tag_panel_wz_setzen", width="stretch"):
+            if wzc1.button(":material/schedule: Nur für diesen Tag übernehmen", key="tag_panel_wz_setzen", width="stretch"):
                 st.session_state["wechselzeit_ausnahmen"][tag] = _wz_neu
                 st.rerun()
             if info.get("wechselzeit_individuell"):
-                if wzc2.button("↩️ Standardzeit verwenden", key="tag_panel_wz_reset", width="stretch"):
+                if wzc2.button(":material/undo: Standardzeit verwenden", key="tag_panel_wz_reset", width="stretch"):
                     st.session_state["wechselzeit_ausnahmen"].pop(tag, None)
                     st.rerun()
         if isinstance(info["konflikt"], str):
-            st.warning(f"⚠️ {info['konflikt']}")
+            st.warning(info["konflikt"], icon=":material/warning:")
         notiz_eingabe = st.text_input(
             "Notiz (optional, gilt für Wunsch/Verzicht)", key="tag_panel_notiz",
             placeholder="z. B. Familienfeier, Geburtstag …",
         )
         b1, b2 = st.columns(2)
-        if b1.button(f"🎯 {anzeige(ELTERNTEIL_1)} will", key="tag_panel_wv", width="stretch"):
+        if b1.button(f":material/star: {anzeige(ELTERNTEIL_1)} will", key="tag_panel_wv", width="stretch"):
             _tag_setzen("wunsch_vater", tag, notiz_eingabe)
-        if b2.button(f"🎯 {anzeige(ELTERNTEIL_2)} will", key="tag_panel_wm", width="stretch"):
+        if b2.button(f":material/star: {anzeige(ELTERNTEIL_2)} will", key="tag_panel_wm", width="stretch"):
             _tag_setzen("wunsch_mutter", tag, notiz_eingabe)
         b3, b4 = st.columns(2)
-        if b3.button(f"🚫 {anzeige(ELTERNTEIL_1)} verzichtet", key="tag_panel_vv", width="stretch"):
+        if b3.button(f":material/event_busy: {anzeige(ELTERNTEIL_1)} verzichtet", key="tag_panel_vv", width="stretch"):
             _tag_setzen("verzicht_vater", tag, notiz_eingabe)
-        if b4.button(f"🚫 {anzeige(ELTERNTEIL_2)} verzichtet", key="tag_panel_vm", width="stretch"):
+        if b4.button(f":material/event_busy: {anzeige(ELTERNTEIL_2)} verzichtet", key="tag_panel_vm", width="stretch"):
             _tag_setzen("verzicht_mutter", tag, notiz_eingabe)
-        if st.button("↩️ Automatisch (Wechselrhythmus entscheidet)", key="tag_panel_reset", width="stretch",
+        if st.button(":material/restart_alt: Automatisch (Wechselrhythmus entscheidet)", key="tag_panel_reset", width="stretch",
                      help="Entfernt Wunsch/Verzicht an diesem Tag - die normale Rotation entscheidet wieder."):
             _tag_zuruecksetzen(tag)
         st.divider()
@@ -1831,17 +1880,18 @@ def seite_kalender():
                     cols[i].write("")
                     continue
 
-                marker_str = ""
+                marker_teile = []
                 if isinstance(info["konflikt"], str):
-                    marker_str += "⚠️"
+                    marker_teile.append(":material/warning:")
                 elif str(info["grund"]).startswith("Wunschtag"):
-                    marker_str += "🎯"
+                    marker_teile.append(":material/star:")
                 elif str(info["grund"]).startswith("Verzichtstag"):
-                    marker_str += "🚫"
+                    marker_teile.append(":material/event_busy:")
                 if isinstance(info["ferien"], str):
-                    marker_str += "🏖️"
+                    marker_teile.append(":material/beach_access:")
                 if isinstance(info["feiertag"], str):
-                    marker_str += "🎉"
+                    marker_teile.append(":material/celebration:")
+                marker_str = " ".join(marker_teile)
                 label = f"{tag} {marker_str}".rstrip()
 
                 tooltip_teile = [f"{WOCHENTAGE[d.weekday()]}, {d.strftime('%d.%m.%Y')} – {anzeige(info['elternteil'])}"]
@@ -2136,6 +2186,12 @@ _PINNWAND_SVG_CHECK = (
     '<path d="M8 12.3l2.3 2.3L16 9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" '
     'stroke-linejoin="round"/></svg>'
 )
+_PINNWAND_SVG_NOTE = (
+    '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<rect x="3.5" y="3.5" width="17" height="17" rx="2.5" stroke="currentColor" stroke-width="1.6"/>'
+    '<path d="M7.5 9h9M7.5 12.5h9M7.5 16h5.5" stroke="currentColor" stroke-width="1.6" '
+    'stroke-linecap="round"/></svg>'
+)
 
 
 def _pinnwand_karten_stil(karten_id: str, praefix: str):
@@ -2164,6 +2220,7 @@ def seite_pinnwand():
     _kontakte = st.session_state["notfallkontakte"]
     _dokumente = st.session_state["dokumente"]
     _checkliste = st.session_state["uebergabe_checkliste"]
+    _feste_infos = st.session_state["feste_infos"]
 
     # ---------- Optik: dezente Mint-Flaeche statt fotorealistischer Korkwand ----------
     st.markdown(
@@ -2240,11 +2297,11 @@ def seite_pinnwand():
             unsafe_allow_html=True,
         )
 
-        if not _kontakte and not _dokumente and not _checkliste:
+        if not _kontakte and not _dokumente and not _checkliste and not _feste_infos:
             st.markdown(
                 '<div class="pinnwand-leer">Noch nichts an der Pinnwand. Weiter unten kannst du '
-                "eine Übergabe-Checkliste anlegen, Notfallkontakte eintragen und Dokumente "
-                "hochladen.</div>",
+                "eine Übergabe-Checkliste anlegen, Notfallkontakte eintragen, feste Infos notieren "
+                "und Dokumente hochladen.</div>",
                 unsafe_allow_html=True,
             )
         else:
@@ -2283,7 +2340,7 @@ def seite_pinnwand():
                             speichere_daten()
                             st.rerun()
 
-            if _checkliste and (_kontakte or _dokumente):
+            if _checkliste and (_kontakte or _feste_infos or _dokumente):
                 st.markdown("<div style='height: 0.4rem'></div>", unsafe_allow_html=True)
 
             if _kontakte:
@@ -2310,7 +2367,30 @@ def seite_pinnwand():
                                 speichere_daten()
                                 st.rerun()
 
-            if _kontakte and _dokumente:
+            if _kontakte and (_feste_infos or _dokumente):
+                st.markdown("<div style='height: 0.4rem'></div>", unsafe_allow_html=True)
+
+            if _feste_infos:
+                st.markdown(
+                    f'<div class="pinnwand-subtitel">{_PINNWAND_SVG_NOTE}<span>Feste Infos</span></div>',
+                    unsafe_allow_html=True,
+                )
+                _pinnwand_karten_stil("f3e5d1c9", "karte_festeinfo_")
+                with st.container(border=True, key="karte_festeinfo_f3e5d1c9"):
+                    st.caption("Gilt dauerhaft, wird nur ab und an angepasst – z. B. Zahlencode Fahrradschloss.")
+                    for _fi in _feste_infos:
+                        _fic1, _fic2 = st.columns([6, 1])
+                        with _fic1:
+                            st.write(_fi["text"])
+                        with _fic2:
+                            if st.button(":material/delete:", key=f"del_festeinfo_{_fi['id']}"):
+                                st.session_state["feste_infos"] = [
+                                    x for x in st.session_state["feste_infos"] if x["id"] != _fi["id"]
+                                ]
+                                speichere_daten()
+                                st.rerun()
+
+            if _feste_infos and _dokumente:
                 st.markdown("<div style='height: 0.4rem'></div>", unsafe_allow_html=True)
 
             if _dokumente:
@@ -2361,7 +2441,7 @@ def seite_pinnwand():
 
     # ---------- Neuer Eintrag ----------
     st.markdown("#### :material/add_circle: Neuer Eintrag")
-    _neu_c0, _neu_c1, _neu_c2 = st.columns(3)
+    _neu_c0, _neu_c1, _neu_c2, _neu_c3 = st.columns(4)
 
     with _neu_c0:
         with st.expander(":material/checklist: Checklisten-Punkt hinzufügen", expanded=False):
@@ -2454,6 +2534,28 @@ def seite_pinnwand():
                     st.rerun()
                 else:
                     st.warning("Bitte einen Titel eingeben und eine Datei auswählen.")
+
+    with _neu_c3:
+        with st.expander(":material/sticky_note_2: Feste Info hinzufügen", expanded=False):
+            st.caption(
+                "Dinge, die immer gelten und nur ab und an angepasst werden – z. B. Zahlencode "
+                "Fahrradschloss, WLAN-Passwort, Hausschlüssel-Versteck."
+            )
+            _fi_suffix = st.session_state["feste_info_form_key"]
+            _fi_text = st.text_input(
+                "Info", key=f"fi_text_{_fi_suffix}", placeholder="z. B. Zahlencode Fahrradschloss: 4711",
+            )
+            if st.button(":material/add: Speichern", key="feste_info_speichern", type="primary"):
+                if _fi_text.strip():
+                    st.session_state["feste_infos"].append({
+                        "id": uuid.uuid4().hex[:8],
+                        "text": _fi_text.strip(),
+                    })
+                    st.session_state["feste_info_form_key"] += 1
+                    speichere_daten()
+                    st.rerun()
+                else:
+                    st.warning("Bitte einen Text eingeben.")
 
     speichere_daten()
 
