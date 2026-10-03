@@ -2781,12 +2781,141 @@ def seite_einstellungen():
     )
 
 
+def _regeln_karten_stil(karten_id: str):
+    """Duenner Akzentstreifen oben an der Karte mit Key f'pe_card_regeln_{karten_id}' -
+    gleiches Prinzip wie auf der Pinnwand, damit die Themenbereiche optisch auseinander-
+    gehalten werden koennen, ohne dass es laut oder unruhig wirkt."""
+    _wert = sum(ord(_z) for _z in karten_id)
+    _akzent_farben = ["#534AB7", "#0F5C66", "#C97B4A", "#4A7A6B", "#8859A3"]
+    _akzent_farbe = _akzent_farben[_wert % len(_akzent_farben)]
+    st.markdown(
+        f"""
+        <style>
+        .st-key-pe_card_regeln_{karten_id} {{ border-top: 4px solid {_akzent_farbe} !important; }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def seite_regeln():
+    st.subheader(":material/balance: So machen wir's")
+    st.caption(
+        "Diese Sammlung ist eine Inspiration für Gespräche zwischen zwei Haushalten, "
+        "keine Vorgabe. Jede Familie entscheidet selbst, welche Themen sie besprechen "
+        "möchte. Unterschiedliche Regeln in zwei Haushalten sind normal und oft völlig "
+        "in Ordnung."
+    )
+
+    _themenbereiche = [
+        {
+            "id": "kommunikation",
+            "icon": ":material/chat:",
+            "titel": "Kommunikation",
+            "fragen": [
+                "Über welchen Kanal sprechen wir uns ab: Telefon, WhatsApp, Sprachnachricht, E-Mail?",
+                "Zu welchen Zeiten ist ein Anruf in Ordnung, und wann eher nicht?",
+                "Was besprechen wir schriftlich, was lieber persönlich?",
+                "Wie schnell erwarten wir eine Antwort, und was gilt im Notfall?",
+                "Wie gehen wir damit um, wenn das Kind den anderen Elternteil kontaktieren möchte?",
+                "Was besprechen wir nie vor dem Kind oder über das Kind als Boten?",
+            ],
+        },
+        {
+            "id": "termine",
+            "icon": ":material/event:",
+            "titel": "Termine & Übergaben",
+            "fragen": [
+                "Um wie viel Uhr findet der Wechsel statt, und wo?",
+                "Legt jeder Termine des Kindes nur in die eigene Betreuungszeit?",
+                "Wie weit im Voraus teilen wir Ferien und Feiertage auf?",
+                "Wie gehen wir mit Verschiebungen um, und wie früh sagen wir Bescheid?",
+                "Was gehört bei jeder Übergabe mit ins Gepäck?",
+                "Wie gestalten wir Geburtstage und besondere Tage des Kindes?",
+            ],
+        },
+        {
+            "id": "verantwortlichkeiten",
+            "icon": ":material/assignment_ind:",
+            "titel": "Verantwortlichkeiten",
+            "fragen": [
+                "Wer kümmert sich um regelmäßige Arzttermine, und wer begleitet das Kind?",
+                "Wer hält Kontakt zur Schule oder Kita, und wie erfährt der andere davon?",
+                "Wer organisiert Hobbys, Anmeldungen und Fahrten dorthin?",
+                "Wer ist erste Ansprechperson für Lehrkräfte, Trainer:innen oder Betreuung?",
+                "Welche Entscheidungen trifft jeder allein, welche treffen wir gemeinsam?",
+            ],
+        },
+        {
+            "id": "geld",
+            "icon": ":material/payments:",
+            "titel": "Geld",
+            "fragen": [
+                "Wie teilen wir feste, laufende Kosten auf, z. B. Kita, Vereinsbeitrag, Handyvertrag?",
+                "Nutzen wir ein gemeinsames Konto, oder rechnen wir regelmäßig ab?",
+                "Wie sammeln wir Belege für nicht feste Kosten?",
+                "Nach welchem Schlüssel rechnen wir auseinander, und wie oft?",
+                "Ab welchem Betrag stimmen wir uns vor einem Kauf ab?",
+                "Wie holen wir uns das Okay des anderen ein, und wie schnell?",
+            ],
+        },
+        {
+            "id": "alltag",
+            "icon": ":material/home:",
+            "titel": "Alltag & Erziehung",
+            "fragen": [
+                "Wie lange darf das Kind abends wach bleiben?",
+                "Wie viel Bildschirmzeit ist in Ordnung, und welche Spiele oder Apps?",
+                "Ab wann bekommt das Kind ein eigenes Handy?",
+                "Wie halten wir es mit Süßigkeiten und Essen?",
+                "Wie gehen wir mit Hausaufgaben und Lernen um?",
+                "Welche Regeln sollen in beiden Haushalten gleich sein, welche dürfen unterschiedlich sein?",
+            ],
+        },
+        {
+            "id": "gesundheit",
+            "icon": ":material/health_and_safety:",
+            "titel": "Gesundheit",
+            "fragen": [
+                "Wie informieren wir uns gegenseitig, wenn das Kind krank ist?",
+                "Wer bleibt zu Hause, wenn das Kind während der eigenen Betreuungszeit krank wird?",
+                "Wo liegen Krankenkassenkarte, Impfpass und Medikamente?",
+                "Wie geben wir Medikamente bei der Übergabe weiter?",
+                "Wer darf im Notfall entscheiden, und wer wird zuerst angerufen?",
+            ],
+        },
+        {
+            "id": "patchwork",
+            "icon": ":material/diversity_3:",
+            "titel": "Neue Partner & Patchwork",
+            "fragen": [
+                "Wann und wie lernt das Kind eine neue Partnerin oder einen neuen Partner kennen?",
+                "Sagen wir dem anderen Elternteil vorher Bescheid?",
+                "Welche Rolle übernehmen neue Partner:innen, z. B. bei Abholung oder Übergaben?",
+                "Wie gehen wir mit Geschwistern und Stiefgeschwistern in beiden Haushalten um?",
+                "Wie beziehen wir Großeltern und weitere Bezugspersonen ein?",
+            ],
+        },
+    ]
+
+    for _bereich in _themenbereiche:
+        with st.container(key=f"pe_card_regeln_{_bereich['id']}"):
+            _regeln_karten_stil(_bereich["id"])
+            st.markdown(f"##### {_bereich['icon']} {_bereich['titel']}")
+            _liste_html = "".join(f"<li>{_frage}</li>" for _frage in _bereich["fragen"])
+            st.markdown(
+                f"<ul style='margin:0; padding-left:1.2rem;'>{_liste_html}</ul>",
+                unsafe_allow_html=True,
+            )
+
+
 pg = st.navigation(
     [
         st.Page(seite_kalender, title="Kalender", icon=":material/calendar_month:", default=True),
         st.Page(seite_finanzen, title="Kostenteilung", icon=":material/account_balance_wallet:"),
         st.Page(seite_pinnwand, title="Pinnwand", icon=":material/push_pin:"),
         st.Page(seite_journal, title="Journal", icon=":material/auto_stories:"),
+        st.Page(seite_regeln, title="So machen wir's", icon=":material/balance:"),
         st.Page(seite_einstellungen, title="Einstellungen", icon=":material/tune:"),
     ],
     position="top",
