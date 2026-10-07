@@ -2781,37 +2781,131 @@ def seite_einstellungen():
     )
 
 
-def _regeln_karten_stil(karten_id: str):
-    """Duenner Akzentstreifen oben an der Karte mit Key f'pe_card_regeln_{karten_id}' -
-    gleiches Prinzip wie auf der Pinnwand, damit die Themenbereiche optisch auseinander-
-    gehalten werden koennen, ohne dass es laut oder unruhig wirkt."""
-    _wert = sum(ord(_z) for _z in karten_id)
-    _akzent_farben = ["#534AB7", "#0F5C66", "#C97B4A", "#4A7A6B", "#8859A3"]
-    _akzent_farbe = _akzent_farben[_wert % len(_akzent_farben)]
+def seite_regeln():
+    """Statische Ideen-Seite: Anregungen, worueber sich zwei Haushalte Gedanken machen
+    koennen. Optik angelehnt an den Partner-Pitch (Kacheln mit Icon und Farbakzent,
+    Strichzeichnungen) - bewusst verspielt, mit 'Naehten' wie bei einem Patchwork."""
+
     st.markdown(
-        f"""
+        """
         <style>
-        .st-key-pe_card_regeln_{karten_id} {{ border-top: 4px solid {_akzent_farbe} !important; }}
+        .pe-ideen-hero {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem 2.5rem;
+            background: linear-gradient(135deg, #0F5C66 0%, #143E6B 100%);
+            color: #FBF9F4; border-radius: 24px; padding: 2rem 2.2rem;
+            box-shadow: var(--pe-shadow); margin-bottom: 1.4rem;
+        }
+        .pe-ideen-hero-text { flex: 1 1 320px; }
+        .pe-ideen-kicker {
+            font-size: 0.78rem; font-weight: 700; letter-spacing: 0.14em;
+            text-transform: uppercase; color: #C7BEF7; margin-bottom: 0.4rem;
+        }
+        .pe-ideen-titel {
+            font-size: 2.1rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.02em;
+            color: #FBF9F4; margin: 0 0 0.7rem 0;
+        }
+        .pe-ideen-titel span { color: #C7BEF7; }
+        .pe-ideen-intro { font-size: 1rem; line-height: 1.55; color: #DCE9EA; margin: 0; }
+        .pe-ideen-hero svg { flex: 0 1 300px; width: 300px; max-width: 100%; height: auto; }
+
+        .pe-ideen-raster {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+            gap: 1.4rem; margin-bottom: 1.4rem;
+        }
+        .pe-idee {
+            position: relative; border-radius: 22px; padding: 1.7rem 1.5rem 1.3rem 1.5rem;
+            background: #FFFFFF;
+            background: color-mix(in srgb, var(--acc) 8%, #FFFFFF);
+            border: 2px dashed var(--acc);
+            box-shadow: 0 6px 18px rgba(44,42,61,0.06);
+            transform: rotate(-0.5deg);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .pe-idee:nth-child(even) { transform: rotate(0.5deg); }
+        .pe-idee:hover { transform: rotate(0deg) translateY(-4px); box-shadow: 0 12px 26px rgba(44,42,61,0.12); }
+        .pe-idee-nr {
+            position: absolute; top: -13px; left: 22px;
+            font-size: 0.8rem; font-weight: 800; color: #FFFFFF; background: var(--acc);
+            border-radius: 999px; padding: 2px 13px; line-height: 1.5; letter-spacing: 0.04em;
+        }
+        .pe-idee-kopf { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+        .pe-idee-icon {
+            flex: 0 0 64px; width: 64px; height: 64px; border-radius: 50%;
+            background: #FFFFFF; border: 2px solid var(--acc);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .pe-idee-icon svg { width: 40px; height: 40px; }
+        .pe-idee-name { font-size: 1.25rem; font-weight: 800; color: #2B2A3D; line-height: 1.2; }
+        .pe-idee-frage { font-size: 0.95rem; font-weight: 600; color: var(--acc); margin-top: 0.15rem; }
+        .pe-idee ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+        .pe-idee li {
+            position: relative; background: rgba(255,255,255,0.85);
+            border-radius: 14px 14px 14px 4px; padding: 0.55rem 0.8rem 0.55rem 2rem;
+            font-size: 0.95rem; line-height: 1.4; color: #2B2A3D;
+        }
+        .pe-idee li::before {
+            content: ""; position: absolute; left: 0.8rem; top: 0.95rem;
+            width: 9px; height: 9px; border-radius: 50%; background: var(--acc);
+        }
+
+        .pe-ideen-tipp {
+            display: flex; align-items: center; gap: 1rem; background: #E4E1F9;
+            border-radius: 18px; padding: 1.1rem 1.4rem; font-size: 1rem;
+            line-height: 1.45; color: #2B2A3D;
+        }
+        .pe-ideen-tipp b { color: #534AB7; }
+        .pe-ideen-tipp svg { flex: 0 0 44px; width: 44px; height: 44px; }
+        @media (max-width: 640px) {
+            .pe-ideen-raster { grid-template-columns: 1fr; }
+            .pe-ideen-titel { font-size: 1.7rem; }
+        }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
+    # ---------- Strichzeichnungen (Stil wie im Pitch: Linien, runde Enden) ----------
+    def _ico(farbe, inhalt):
+        return (
+            f'<svg viewBox="0 0 64 64" fill="none" stroke="{farbe}" stroke-width="3" '
+            f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{inhalt}</svg>'
+        )
 
-def seite_regeln():
-    st.subheader(":material/balance: So machen wir's")
-    st.caption(
-        "Diese Sammlung ist eine Inspiration für Gespräche zwischen zwei Haushalten, "
-        "keine Vorgabe. Jede Familie entscheidet selbst, welche Themen sie besprechen "
-        "möchte. Unterschiedliche Regeln in zwei Haushalten sind normal und oft völlig "
-        "in Ordnung."
-    )
+    _icons = {
+        "kommunikation": lambda c: _ico(c,
+            '<path d="M10 12h38a5 5 0 0 1 5 5v18a5 5 0 0 1-5 5H28l-10 9v-9h-8a5 5 0 0 1-5-5V17a5 5 0 0 1 5-5z"/>'
+            f'<circle cx="21" cy="26" r="2" fill="{c}"/><circle cx="31" cy="26" r="2" fill="{c}"/>'
+            f'<circle cx="41" cy="26" r="2" fill="{c}"/>'),
+        "termine": lambda c: _ico(c,
+            '<rect x="9" y="14" width="46" height="41" rx="7"/><line x1="9" y1="27" x2="55" y2="27"/>'
+            '<line x1="21" y1="8" x2="21" y2="19"/><line x1="43" y1="8" x2="43" y2="19"/>'
+            f'<circle cx="32" cy="42" r="5" fill="{c}"/>'),
+        "verantwortlichkeiten": lambda c: _ico(c,
+            '<rect x="14" y="12" width="36" height="45" rx="6"/><rect x="24" y="7" width="16" height="10" rx="4"/>'
+            '<polyline points="21,29 25,33 31,25"/><line x1="36" y1="30" x2="44" y2="30"/>'
+            '<polyline points="21,44 25,48 31,40"/><line x1="36" y1="45" x2="44" y2="45"/>'),
+        "geld": lambda c: _ico(c,
+            '<circle cx="32" cy="32" r="23"/><circle cx="32" cy="32" r="16" stroke-dasharray="2 6"/>'
+            f'<text x="32" y="41" text-anchor="middle" font-size="26" font-weight="800" '
+            f'fill="{c}" stroke="none" font-family="Poppins, Arial, sans-serif">€</text>'),
+        "alltag": lambda c: _ico(c,
+            '<path d="M38 9a23 23 0 1 0 17 38A19 19 0 0 1 38 9z"/>'
+            '<path d="M50 13v10M45 18h10"/><path d="M54 30v6M51 33h6" opacity="0.7"/>'),
+        "gesundheit": lambda c: _ico(c,
+            '<path d="M32 54C12 40 8 30 8 22a12 12 0 0 1 24-4 12 12 0 0 1 24 4c0 8-4 18-24 32z"/>'
+            '<path d="M32 25v14M25 32h14"/>'),
+        "patchwork": lambda c: _ico(c,
+            '<rect x="9" y="9" width="21" height="21" rx="4" fill="' + c + '" fill-opacity="0.25"/>'
+            '<rect x="34" y="9" width="21" height="21" rx="4"/>'
+            '<rect x="9" y="34" width="21" height="21" rx="4"/>'
+            '<rect x="34" y="34" width="21" height="21" rx="4" fill="' + c + '" fill-opacity="0.25"/>'
+            '<path d="M14 19h11M39 44h11" stroke-dasharray="2 4"/>'),
+    }
 
     _themenbereiche = [
         {
-            "id": "kommunikation",
-            "icon": ":material/chat:",
-            "titel": "Kommunikation",
+            "id": "kommunikation", "farbe": "#534AB7", "titel": "Kommunikation",
+            "frage": "Wie bleiben wir im Gespräch?",
             "fragen": [
                 "Über welchen Kanal sprechen wir uns ab: Telefon, WhatsApp, Sprachnachricht, E-Mail?",
                 "Zu welchen Zeiten ist ein Anruf in Ordnung, und wann eher nicht?",
@@ -2822,9 +2916,8 @@ def seite_regeln():
             ],
         },
         {
-            "id": "termine",
-            "icon": ":material/event:",
-            "titel": "Termine & Übergaben",
+            "id": "termine", "farbe": "#0F5C66", "titel": "Termine &amp; Übergaben",
+            "frage": "Wann ist was wo?",
             "fragen": [
                 "Um wie viel Uhr findet der Wechsel statt, und wo?",
                 "Legt jeder Termine des Kindes nur in die eigene Betreuungszeit?",
@@ -2835,9 +2928,8 @@ def seite_regeln():
             ],
         },
         {
-            "id": "verantwortlichkeiten",
-            "icon": ":material/assignment_ind:",
-            "titel": "Verantwortlichkeiten",
+            "id": "verantwortlichkeiten", "farbe": "#C97B4A", "titel": "Verantwortlichkeiten",
+            "frage": "Wer macht was?",
             "fragen": [
                 "Wer kümmert sich um regelmäßige Arzttermine, und wer begleitet das Kind?",
                 "Wer hält Kontakt zur Schule oder Kita, und wie erfährt der andere davon?",
@@ -2847,9 +2939,8 @@ def seite_regeln():
             ],
         },
         {
-            "id": "geld",
-            "icon": ":material/payments:",
-            "titel": "Geld",
+            "id": "geld", "farbe": "#4A7A6B", "titel": "Geld",
+            "frage": "Was kostet’s, und wer zahlt?",
             "fragen": [
                 "Wie teilen wir feste, laufende Kosten auf, z. B. Kita, Vereinsbeitrag, Handyvertrag?",
                 "Nutzen wir ein gemeinsames Konto, oder rechnen wir regelmäßig ab?",
@@ -2860,9 +2951,8 @@ def seite_regeln():
             ],
         },
         {
-            "id": "alltag",
-            "icon": ":material/home:",
-            "titel": "Alltag & Erziehung",
+            "id": "alltag", "farbe": "#8859A3", "titel": "Alltag &amp; Erziehung",
+            "frage": "Wie sieht ein ganz normaler Tag aus?",
             "fragen": [
                 "Wie lange darf das Kind abends wach bleiben?",
                 "Wie viel Bildschirmzeit ist in Ordnung, und welche Spiele oder Apps?",
@@ -2873,9 +2963,8 @@ def seite_regeln():
             ],
         },
         {
-            "id": "gesundheit",
-            "icon": ":material/health_and_safety:",
-            "titel": "Gesundheit",
+            "id": "gesundheit", "farbe": "#B5547A", "titel": "Gesundheit",
+            "frage": "Wenn es dem Kind nicht gut geht",
             "fragen": [
                 "Wie informieren wir uns gegenseitig, wenn das Kind krank ist?",
                 "Wer bleibt zu Hause, wenn das Kind während der eigenen Betreuungszeit krank wird?",
@@ -2885,9 +2974,8 @@ def seite_regeln():
             ],
         },
         {
-            "id": "patchwork",
-            "icon": ":material/diversity_3:",
-            "titel": "Neue Partner & Patchwork",
+            "id": "patchwork", "farbe": "#3A6EA5", "titel": "Neue Partner &amp; Patchwork",
+            "frage": "Wenn die Familie wächst",
             "fragen": [
                 "Wann und wie lernt das Kind eine neue Partnerin oder einen neuen Partner kennen?",
                 "Sagen wir dem anderen Elternteil vorher Bescheid?",
@@ -2898,15 +2986,78 @@ def seite_regeln():
         },
     ]
 
-    for _bereich in _themenbereiche:
-        with st.container(key=f"pe_card_regeln_{_bereich['id']}"):
-            _regeln_karten_stil(_bereich["id"])
-            st.markdown(f"##### {_bereich['icon']} {_bereich['titel']}")
-            _liste_html = "".join(f"<li>{_frage}</li>" for _frage in _bereich["fragen"])
-            st.markdown(
-                f"<ul style='margin:0; padding-left:1.2rem;'>{_liste_html}</ul>",
-                unsafe_allow_html=True,
-            )
+    # ---------- Hero: Zeichnung aus dem Pitch-Cover (zwei Haeuser, Kind dazwischen) ----------
+    _hero_svg = (
+        '<svg viewBox="0 0 300 190" aria-label="Zeichnung: zwei Häuser, verbunden durch einen '
+        'gestrichelten Weg, dazwischen ein Kind mit Turnbeutel">'
+        '<path d="M70,150 Q150,55 230,150" fill="none" stroke="#C7BEF7" stroke-width="2" '
+        'stroke-dasharray="3 9" stroke-linecap="round" opacity="0.7"/>'
+        '<g fill="none" stroke="#FBF9F4" stroke-width="2.5" stroke-linejoin="round">'
+        '<polygon points="20,95 60,55 100,95"/><rect x="28" y="95" width="64" height="55"/>'
+        '<rect x="50" y="122" width="20" height="28"/>'
+        '<polygon points="200,95 240,55 280,95"/><rect x="208" y="95" width="64" height="55"/>'
+        '<rect x="230" y="122" width="20" height="28"/></g>'
+        '<g fill="none" stroke="#C7BEF7" stroke-width="2.2" stroke-linejoin="round">'
+        '<circle cx="60" cy="108" r="7"/><path d="M60,115 L49,142 L71,142 Z"/>'
+        '<circle cx="240" cy="108" r="7"/><path d="M240,115 L229,142 L251,142 Z"/></g>'
+        '<g fill="none" stroke="#FBF9F4" stroke-width="2.2" stroke-linecap="round">'
+        '<circle cx="150" cy="90" r="6"/><line x1="150" y1="96" x2="150" y2="118"/>'
+        '<line x1="150" y1="103" x2="138" y2="112"/><line x1="150" y1="103" x2="161" y2="98"/>'
+        '<line x1="150" y1="118" x2="141" y2="136"/><line x1="150" y1="118" x2="159" y2="136"/></g>'
+        '<rect x="160" y="96" width="12" height="16" rx="3" fill="none" stroke="#C7BEF7" stroke-width="2"/>'
+        '<path d="M150 70c-6-9-16-3-10 4 3 3 7 6 10 9 3-3 7-6 10-9 6-7-4-13-10-4z" '
+        'fill="#C7BEF7" stroke="none" opacity="0.9"/>'
+        '</svg>'
+    )
+
+    _hero = (
+        '<div class="pe-ideen-hero">'
+        '<div class="pe-ideen-hero-text">'
+        '<div class="pe-ideen-kicker">Zum Stöbern &amp; Besprechen</div>'
+        '<h2 class="pe-ideen-titel">Ideen für <span>zwei Zuhause</span></h2>'
+        '<p class="pe-ideen-intro">Worüber könnt ihr euch Gedanken machen? Das hier sind '
+        'Anregungen für Gespräche zwischen zwei Haushalten, keine Vorgaben. Jede Familie '
+        'entscheidet selbst, welche Themen passen. Unterschiedliche Regeln in zwei Haushalten '
+        'sind normal und oft völlig in Ordnung.</p>'
+        '</div>'
+        f'{_hero_svg}'
+        '</div>'
+    )
+
+    _kacheln = []
+    for _i, _b in enumerate(_themenbereiche, start=1):
+        _liste = "".join(f"<li>{_f}</li>" for _f in _b["fragen"])
+        _kacheln.append(
+            f'<div class="pe-idee" style="--acc:{_b["farbe"]}">'
+            f'<div class="pe-idee-nr">{_i:02d}</div>'
+            '<div class="pe-idee-kopf">'
+            f'<div class="pe-idee-icon">{_icons[_b["id"]](_b["farbe"])}</div>'
+            '<div>'
+            f'<div class="pe-idee-name">{_b["titel"]}</div>'
+            f'<div class="pe-idee-frage">{_b["frage"]}</div>'
+            '</div></div>'
+            f'<ul>{_liste}</ul>'
+            '</div>'
+        )
+
+    _tipp_svg = (
+        '<svg viewBox="0 0 44 44" fill="none" stroke="#534AB7" stroke-width="2.6" '
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+        '<path d="M22 6a12 12 0 0 0-7 21.8V32h14v-4.2A12 12 0 0 0 22 6z"/>'
+        '<line x1="17" y1="37" x2="27" y2="37"/><line x1="19" y1="41" x2="25" y2="41"/></svg>'
+    )
+    _tipp = (
+        '<div class="pe-ideen-tipp">'
+        f'{_tipp_svg}'
+        '<div><b>Kleiner Tipp:</b> Sucht euch zwei oder drei Themen aus, die euch gerade '
+        'wichtig sind. Der Rest darf warten, und nicht alles muss in beiden Zuhause gleich sein.</div>'
+        '</div>'
+    )
+
+    st.markdown(
+        _hero + '<div class="pe-ideen-raster">' + "".join(_kacheln) + "</div>" + _tipp,
+        unsafe_allow_html=True,
+    )
 
 
 pg = st.navigation(
@@ -2915,7 +3066,7 @@ pg = st.navigation(
         st.Page(seite_finanzen, title="Kostenteilung", icon=":material/account_balance_wallet:"),
         st.Page(seite_pinnwand, title="Pinnwand", icon=":material/push_pin:"),
         st.Page(seite_journal, title="Journal", icon=":material/auto_stories:"),
-        st.Page(seite_regeln, title="So machen wir's", icon=":material/balance:"),
+        st.Page(seite_regeln, title="Ideen", icon=":material/lightbulb:", url_path="ideen"),
         st.Page(seite_einstellungen, title="Einstellungen", icon=":material/tune:"),
     ],
     position="top",
