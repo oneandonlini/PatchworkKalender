@@ -5,6 +5,7 @@ Alle Anfragen laufen mit dem Ausweis (Token) der angemeldeten Person.
 Was jemand sehen oder ändern darf, entscheidet PocketBase über die API-Regeln.
 """
 import json
+from collections import Counter
 
 import requests
 import streamlit as st
@@ -20,6 +21,18 @@ PLAN_SCHLUESSEL = [
     "wechseltag", "wechselmodell", "wochenplan", "wechsel_start_parent",
     "wechselzeit", "wechselzeit_ausnahmen", "feste_wochentage",
 ]
+
+
+# Listen, die Eintrag fuer Eintrag in PocketBase liegen: {Sammlung: [Listen-Namen]}
+# "eintraege" duerfen Eltern UND Bezugspersonen sehen.
+LISTEN = {
+    "eintraege": ["ferien", "feiertage",
+                  "wunsch_vater", "verzicht_vater", "wunsch_mutter", "verzicht_mutter"],
+}
+
+
+def listen_schluessel():
+    return [name for namen in LISTEN.values() for name in namen]
 
 
 class PBFehler(Exception):
@@ -138,12 +151,21 @@ def familie_waehlen():
                                    index=list(nach_id).index(aktuell),
                                    format_func=lambda i: nach_id[i]["name"])
         if auswahl != aktuell:                     # Familie gewechselt → alles neu laden
-            behalten = {k: st.session_state[k] for k in ("pb_token", "pb_nutzer")}
-            st.session_state.clear()
-            st.session_state.update(behalten)
-            st.session_state["pb_familie_id"] = auswahl
-            st.rerun()
+            neu_laden(auswahl)
+    with st.sidebar:
+        if st.button("🔄 Aktualisieren", help="Holt Änderungen, die der andere Elternteil "
+                                               "inzwischen gemacht hat."):
+            neu_laden(aktuell)
     return nach_id[aktuell]
+
+
+def neu_laden(familie_id):
+    """Vergisst alle geladenen Daten (Login bleibt) und laedt sie frisch."""
+    behalten = {k: st.session_state[k] for k in ("pb_token", "pb_nutzer")}
+    st.session_state.clear()
+    st.session_state.update(behalten)
+    st.session_state["pb_familie_id"] = familie_id
+    st.rerun()
 
 
 def ist_elternteil(familie):
@@ -190,3 +212,57 @@ def plan_speichern(familie, daten):
         st.session_state["pb_plan_stand"] = stand
     except PBFehler as fehler:
         st.warning(f"Der Plan konnte nicht gespeichert werden ({fehler}).")
+
+
+# ---------------------------------------------------------------- Listen (Ferien, Wuensche ...)
+
+def _schluessel(eintrag):
+    return json.dumps(eintrag, sort_keys=True, ensure_ascii=False)
+
+
+def listen_laden(familie):
+    """Liefert {Listen-Name: [Eintraege]} im Format der frueheren JSON-Datei und
+    merkt sich, welcher Eintrag zu welchem Datensatz in PocketBase gehoert."""
+    ergebnis, stand = {}, {}
+    for sammlung, namen in LISTEN.items():
+        for name in namen:
+            ergebnis[name], stand[name] = [], []
+        for datensatz in liste(sammlung, filter=f'familie = "{familie["id"]}"', sort="created"):
+            name = datensatz.get("liste")
+            if name not in ergebnis:
+                continue
+            eintrag = datensatz.get("eintrag") or {}
+            ergebnis[name].append(eintrag)
+            stand[name].append((_schluessel(eintrag), datensatz["id"]))
+    st.session_state["pb_listen_stand"] = stand
+    return ergebnis
+
+
+def listen_speichern(familie, daten):
+    """Vergleicht die Listen mit dem zuletzt gespeicherten Stand und schickt nur
+    die Unterschiede: neue Eintraege anlegen, entfernte loeschen. Eine Aenderung an
+    einem Eintrag ist dabei 'alten loeschen + neuen anlegen'."""
+    if not ist_elternteil(familie) or "pb_listen_stand" not in st.session_state:
+        return
+    stand = st.session_state["pb_listen_stand"]
+    for sammlung, namen in LISTEN.items():
+        for name in namen:
+            offen = Counter(_schluessel(e) for e in daten.get(name, []))
+            behalten, zu_loeschen = [], []
+            for schluessel, datensatz_id in stand.get(name, []):
+                if offen[schluessel] > 0:
+                    offen[schluessel] -= 1
+                    behalten.append((schluessel, datensatz_id))
+                else:
+                    zu_loeschen.append((schluessel, datensatz_id))
+            try:
+                for schluessel, datensatz_id in zu_loeschen:
+                    loeschen(sammlung, datensatz_id)
+                for schluessel in offen.elements():
+                    neu = anlegen(sammlung, {"familie": familie["id"], "liste": name,
+                                             "eintrag": json.loads(schluessel)})
+                    behalten.append((schluessel, neu["id"]))
+            except PBFehler as fehler:
+                st.warning(f"Änderungen an '{name}' konnten nicht gespeichert werden ({fehler}).")
+                continue
+            stand[name] = behalten

@@ -878,11 +878,12 @@ def lade_gespeicherte_daten():
                 daten = json.load(f)
         except Exception:
             daten = {}
-    # Plan-Einstellungen kommen ausschliesslich aus PocketBase (nie aus der Datei),
-    # damit keine Familie die Einstellungen einer anderen uebernimmt
-    for _k in pb.PLAN_SCHLUESSEL:
+    # Plan-Einstellungen und Kalender-Listen kommen ausschliesslich aus PocketBase
+    # (nie aus der Datei), damit keine Familie Daten einer anderen uebernimmt
+    for _k in pb.PLAN_SCHLUESSEL + pb.listen_schluessel():
         daten.pop(_k, None)
     daten.update(pb.plan_laden(FAMILIE))
+    daten.update(pb.listen_laden(FAMILIE))
     if not daten:
         return
 
@@ -1148,6 +1149,7 @@ def speichere_daten():
     except Exception:
         pass
     pb.plan_speichern(FAMILIE, daten)
+    pb.listen_speichern(FAMILIE, daten)
 
 
 
