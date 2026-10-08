@@ -871,18 +871,8 @@ def lade_gespeicherte_daten():
     if st.session_state.get("_daten_geladen"):
         return
     st.session_state["_daten_geladen"] = True
-    # Uebergangsweise: Bereiche, die noch nicht umgezogen sind, kommen weiter aus der Datei.
+    # Alle Daten kommen aus PocketBase – die fruehere JSON-Datei wird nicht mehr benutzt.
     daten = {}
-    if os.path.exists(DATEN_DATEI):
-        try:
-            with open(DATEN_DATEI, "r", encoding="utf-8") as f:
-                daten = json.load(f)
-        except Exception:
-            daten = {}
-    # Plan-Einstellungen und Kalender-Listen kommen ausschliesslich aus PocketBase
-    # (nie aus der Datei), damit keine Familie Daten einer anderen uebernimmt
-    for _k in pb.PLAN_SCHLUESSEL + pb.listen_schluessel() + ["kinder", "dokumente"]:
-        daten.pop(_k, None)
     daten.update(pb.plan_laden(FAMILIE))
     daten.update(pb.listen_laden(FAMILIE))
     daten.update(pb.kinder_laden(FAMILIE))
@@ -1146,11 +1136,7 @@ def speichere_daten():
             for j in st.session_state["journal_eintraege"]
         ],
     }
-    try:
-        with open(DATEN_DATEI, "w", encoding="utf-8") as f:
-            json.dump(daten, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+    # Gespeichert wird nur noch in PocketBase (keine lokale JSON-Datei mehr).
     pb.plan_speichern(FAMILIE, daten)
     pb.listen_speichern(FAMILIE, daten)
     pb.kinder_speichern(FAMILIE, daten)

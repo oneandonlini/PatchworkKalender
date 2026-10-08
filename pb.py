@@ -29,6 +29,8 @@ LISTEN = {
     "eintraege": ["ferien", "feiertage",
                   "wunsch_vater", "verzicht_vater", "wunsch_mutter", "verzicht_mutter",
                   "notfallkontakte", "uebergabe_checkliste", "feste_infos"],
+    # "eltern_eintraege" sehen NUR die Eltern (Finanzen, Journal).
+    "eltern_eintraege": ["ausgaben", "ausgleichszahlungen", "journal_eintraege"],
 }
 
 
@@ -217,8 +219,20 @@ def plan_speichern(familie, daten):
 
 # ---------------------------------------------------------------- Listen (Ferien, Wuensche ...)
 
+def _vereinheitlichen(wert):
+    """12.0 und 12 sind derselbe Betrag – sonst saehe ein unveraenderter Eintrag
+    nach dem Laden wie geaendert aus und wuerde bei jedem Speichern neu angelegt."""
+    if isinstance(wert, float) and wert.is_integer():
+        return int(wert)
+    if isinstance(wert, dict):
+        return {k: _vereinheitlichen(v) for k, v in wert.items()}
+    if isinstance(wert, list):
+        return [_vereinheitlichen(v) for v in wert]
+    return wert
+
+
 def _schluessel(eintrag):
-    return json.dumps(eintrag, sort_keys=True, ensure_ascii=False)
+    return json.dumps(_vereinheitlichen(eintrag), sort_keys=True, ensure_ascii=False)
 
 
 def listen_laden(familie):
@@ -232,7 +246,9 @@ def listen_laden(familie):
             name = datensatz.get("liste")
             if name not in ergebnis:
                 continue
-            eintrag = datensatz.get("eintrag") or {}
+            eintrag = datensatz.get("eintrag")
+            if not isinstance(eintrag, dict) or not eintrag:
+                continue                           # leere/kaputte Zeile ueberspringen
             ergebnis[name].append(eintrag)
             stand[name].append((_schluessel(eintrag), datensatz["id"]))
     st.session_state["pb_listen_stand"] = stand
