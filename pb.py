@@ -27,7 +27,8 @@ PLAN_SCHLUESSEL = [
 # "eintraege" duerfen Eltern UND Bezugspersonen sehen.
 LISTEN = {
     "eintraege": ["ferien", "feiertage",
-                  "wunsch_vater", "verzicht_vater", "wunsch_mutter", "verzicht_mutter"],
+                  "wunsch_vater", "verzicht_vater", "wunsch_mutter", "verzicht_mutter",
+                  "notfallkontakte", "uebergabe_checkliste", "feste_infos"],
 }
 
 
@@ -266,3 +267,40 @@ def listen_speichern(familie, daten):
                 st.warning(f"Änderungen an '{name}' konnten nicht gespeichert werden ({fehler}).")
                 continue
             stand[name] = behalten
+
+
+# ---------------------------------------------------------------- Kinder
+
+def kinder_laden(familie):
+    """Vornamen der Kinder aus der Sammlung 'kinder' (in der App zaehlen nur die Namen)."""
+    datensaetze = liste("kinder", filter=f'familie = "{familie["id"]}"', sort="created")
+    st.session_state["pb_kinder_stand"] = [(d["vorname"], d["id"]) for d in datensaetze]
+    namen = [d["vorname"] for d in datensaetze]
+    return {"kinder": namen} if namen else {}
+
+
+def kinder_speichern(familie, daten):
+    if not ist_elternteil(familie) or "pb_kinder_stand" not in st.session_state:
+        return
+    stand = st.session_state["pb_kinder_stand"]
+    namen = list(daten.get("kinder", []))
+    if not stand and namen == ["Kind 1"]:          # nur der Platzhalter der App
+        return
+    offen = Counter(namen)
+    behalten, zu_loeschen = [], []
+    for vorname, datensatz_id in stand:
+        if offen[vorname] > 0:
+            offen[vorname] -= 1
+            behalten.append((vorname, datensatz_id))
+        else:
+            zu_loeschen.append(datensatz_id)
+    try:
+        for datensatz_id in zu_loeschen:
+            loeschen("kinder", datensatz_id)
+        for vorname in offen.elements():
+            neu = anlegen("kinder", {"familie": familie["id"], "vorname": vorname})
+            behalten.append((vorname, neu["id"]))
+    except PBFehler as fehler:
+        st.warning(f"Änderungen an den Kindern konnten nicht gespeichert werden ({fehler}).")
+        return
+    st.session_state["pb_kinder_stand"] = behalten

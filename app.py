@@ -11,6 +11,7 @@ import pb  # Verbindung zu PocketBase
 DATEN_DATEI = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gespeicherte_eingaben.json")
 LOGO_DATEI = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo.png")
 BANNER_DATEI = os.path.join(os.path.dirname(os.path.abspath(__file__)), "banner.png")
+DOKUMENTE_AKTIV = False  # Beta: kein Dokumenten-Upload (sensible Daten, siehe Checkliste)
 DOKUMENTE_ORDNER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pinnwand_dokumente")
 os.makedirs(DOKUMENTE_ORDNER, exist_ok=True)
 
@@ -880,10 +881,12 @@ def lade_gespeicherte_daten():
             daten = {}
     # Plan-Einstellungen und Kalender-Listen kommen ausschliesslich aus PocketBase
     # (nie aus der Datei), damit keine Familie Daten einer anderen uebernimmt
-    for _k in pb.PLAN_SCHLUESSEL + pb.listen_schluessel():
+    for _k in pb.PLAN_SCHLUESSEL + pb.listen_schluessel() + ["kinder", "dokumente"]:
         daten.pop(_k, None)
     daten.update(pb.plan_laden(FAMILIE))
     daten.update(pb.listen_laden(FAMILIE))
+    daten.update(pb.kinder_laden(FAMILIE))
+    daten["dokumente"] = []  # Dokumenten-Upload ist in der Beta abgeschaltet
     if not daten:
         return
 
@@ -1150,6 +1153,7 @@ def speichere_daten():
         pass
     pb.plan_speichern(FAMILIE, daten)
     pb.listen_speichern(FAMILIE, daten)
+    pb.kinder_speichern(FAMILIE, daten)
 
 
 
@@ -2456,7 +2460,10 @@ def seite_pinnwand():
 
     # ---------- Neuer Eintrag ----------
     st.markdown("#### :material/add_circle: Neuer Eintrag")
-    _neu_c0, _neu_c1, _neu_c2, _neu_c3 = st.columns(4)
+    if DOKUMENTE_AKTIV:
+        _neu_c0, _neu_c1, _neu_c2, _neu_c3 = st.columns(4)
+    else:
+        _neu_c0, _neu_c1, _neu_c3 = st.columns(3)
 
     with _neu_c0:
         with st.expander(":material/checklist: Checklisten-Punkt hinzufügen", expanded=False):
@@ -2516,39 +2523,40 @@ def seite_pinnwand():
                 else:
                     st.warning("Bitte mindestens Name und Telefonnummer angeben.")
 
-    with _neu_c2:
-        with st.expander(":material/upload_file: Dokument hochladen", expanded=False):
-            st.caption(
-                "Fotos oder PDFs von wichtigen Dokumenten – z. B. Stundenplan, Packliste für die "
-                "Klassenfahrt, eine Seite aus dem Impfausweis."
-            )
-            _pw_suffix = st.session_state["pw_doku_form_key"]
-            _pw_titel = st.text_input(
-                "Titel", key=f"pw_doku_titel_{_pw_suffix}", placeholder="z. B. Stundenplan Mia",
-            )
-            _pw_datei = st.file_uploader(
-                "Foto oder PDF", type=["png", "jpg", "jpeg", "pdf"],
-                key=f"pw_doku_datei_{_pw_suffix}",
-            )
-            if st.button(":material/add: Hinzufügen", key="pw_doku_speichern", type="primary"):
-                if _pw_datei is not None and _pw_titel.strip():
-                    _ext = os.path.splitext(_pw_datei.name)[1].lower()
-                    _neuer_dateiname = f"{uuid.uuid4().hex[:10]}{_ext}"
-                    _pfad = os.path.join(DOKUMENTE_ORDNER, _neuer_dateiname)
-                    with open(_pfad, "wb") as f:
-                        f.write(_pw_datei.getbuffer())
-                    st.session_state["dokumente"].append({
-                        "id": uuid.uuid4().hex[:8],
-                        "titel": _pw_titel.strip(),
-                        "dateiname": _neuer_dateiname,
-                        "original_name": _pw_datei.name,
-                        "hochgeladen_am": dt.date.today().isoformat(),
-                    })
-                    st.session_state["pw_doku_form_key"] += 1
-                    speichere_daten()
-                    st.rerun()
-                else:
-                    st.warning("Bitte einen Titel eingeben und eine Datei auswählen.")
+    if DOKUMENTE_AKTIV:
+        with _neu_c2:
+            with st.expander(":material/upload_file: Dokument hochladen", expanded=False):
+                st.caption(
+                    "Fotos oder PDFs von wichtigen Dokumenten – z. B. Stundenplan, Packliste für die "
+                    "Klassenfahrt, eine Seite aus dem Impfausweis."
+                )
+                _pw_suffix = st.session_state["pw_doku_form_key"]
+                _pw_titel = st.text_input(
+                    "Titel", key=f"pw_doku_titel_{_pw_suffix}", placeholder="z. B. Stundenplan Mia",
+                )
+                _pw_datei = st.file_uploader(
+                    "Foto oder PDF", type=["png", "jpg", "jpeg", "pdf"],
+                    key=f"pw_doku_datei_{_pw_suffix}",
+                )
+                if st.button(":material/add: Hinzufügen", key="pw_doku_speichern", type="primary"):
+                    if _pw_datei is not None and _pw_titel.strip():
+                        _ext = os.path.splitext(_pw_datei.name)[1].lower()
+                        _neuer_dateiname = f"{uuid.uuid4().hex[:10]}{_ext}"
+                        _pfad = os.path.join(DOKUMENTE_ORDNER, _neuer_dateiname)
+                        with open(_pfad, "wb") as f:
+                            f.write(_pw_datei.getbuffer())
+                        st.session_state["dokumente"].append({
+                            "id": uuid.uuid4().hex[:8],
+                            "titel": _pw_titel.strip(),
+                            "dateiname": _neuer_dateiname,
+                            "original_name": _pw_datei.name,
+                            "hochgeladen_am": dt.date.today().isoformat(),
+                        })
+                        st.session_state["pw_doku_form_key"] += 1
+                        speichere_daten()
+                        st.rerun()
+                    else:
+                        st.warning("Bitte einen Titel eingeben und eine Datei auswählen.")
 
     with _neu_c3:
         with st.expander(":material/sticky_note_2: Feste Info hinzufügen", expanded=False):
