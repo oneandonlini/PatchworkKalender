@@ -9,11 +9,16 @@ from collections import Counter
 
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 try:
     PB_URL = st.secrets["PB_URL"]
 except Exception:
     PB_URL = "http://127.0.0.1:8090"
+
+# "Angemeldet bleiben": der Ausweis wird in einem Browser-Cookie gemerkt
+COOKIE_NAME = "patcheasy_sitzung"
+COOKIE_TAGE = 7
 
 # Schlüssel aus speichere_daten(), die im Datensatz "plan" landen
 PLAN_SCHLUESSEL = [
@@ -98,12 +103,48 @@ def loeschen(sammlung, datensatz_id):
 
 def abmelden():
     st.session_state.clear()
+    st.session_state["pb_abgemeldet"] = True      # in dieser Sitzung nicht automatisch neu anmelden
+    st.session_state["pb_cookie_loeschen"] = True
     st.rerun()
+
+
+def _cookie_schreiben(wert, max_age):
+    """Setzt bzw. loescht das Cookie im Browser (ueber ein unsichtbares Mini-Skript)."""
+    host = st.context.headers.get("Host", "")
+    lokal = isinstance(host, str) and host.startswith(("localhost", "127.0.0.1"))
+    eigenschaften = f"path=/; max-age={max_age}; SameSite=Strict" + ("" if lokal else "; Secure")
+    zeile = json.dumps(f"{COOKIE_NAME}={wert}; {eigenschaften}")
+    components.html(f"<script>parent.document.cookie = {zeile};</script>", height=0)
+
+
+def _automatisch_anmelden():
+    """Prueft beim Oeffnen der Seite, ob ein gemerkter Ausweis da ist, und erneuert ihn."""
+    if st.session_state.get("pb_abgemeldet"):
+        return
+    gemerkt = st.context.cookies.get(COOKIE_NAME)
+    if not isinstance(gemerkt, str) or not gemerkt:
+        return
+    try:
+        r = requests.post(f"{PB_URL}/api/collections/users/auth-refresh",
+                          headers={"Authorization": gemerkt}, timeout=10)
+    except requests.ConnectionError:
+        return
+    if r.status_code == 200:
+        st.session_state["pb_token"] = r.json()["token"]
+        st.session_state["pb_nutzer"] = r.json()["record"]
+        st.session_state["pb_cookie_neu"] = r.json()["token"]   # erneuerten Ausweis merken
+    else:
+        st.session_state["pb_cookie_loeschen"] = True           # abgelaufen → vergessen
 
 
 def login_seite():
     """Zeigt das Login-Formular und hält die App an, bis jemand angemeldet ist."""
+    if "pb_token" not in st.session_state:
+        _automatisch_anmelden()
+
     if "pb_token" in st.session_state:
+        if "pb_cookie_neu" in st.session_state:
+            _cookie_schreiben(st.session_state.pop("pb_cookie_neu"), COOKIE_TAGE * 24 * 3600)
         with st.sidebar:
             nutzer = st.session_state["pb_nutzer"]
             st.caption(f"Angemeldet als {nutzer.get('name') or nutzer['email']}")
@@ -111,10 +152,15 @@ def login_seite():
                 abmelden()
         return
 
+    if st.session_state.pop("pb_cookie_loeschen", False):
+        _cookie_schreiben("", 0)
+
     st.title("PatchEasy – Anmelden")
     with st.form("pb_login"):
         email = st.text_input("E-Mail")
         passwort = st.text_input("Passwort", type="password")
+        merken = st.checkbox("Angemeldet bleiben", value=True,
+                             help="Nicht auf fremden oder gemeinsam genutzten Geräten.")
         absenden = st.form_submit_button("Anmelden")
     if absenden:
         try:
@@ -127,6 +173,9 @@ def login_seite():
         if r.status_code == 200:
             st.session_state["pb_token"] = r.json()["token"]
             st.session_state["pb_nutzer"] = r.json()["record"]
+            st.session_state.pop("pb_abgemeldet", None)
+            if merken:
+                st.session_state["pb_cookie_neu"] = r.json()["token"]
             st.rerun()
         st.error("E-Mail oder Passwort falsch.")
     st.stop()
