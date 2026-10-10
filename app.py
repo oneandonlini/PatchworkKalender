@@ -24,6 +24,10 @@ st.set_page_config(
 # ---------- Anmeldung und Familie (PocketBase) ----------
 pb.login_seite()
 FAMILIE = pb.familie_waehlen()
+NUR_LESEN = not pb.ist_elternteil(FAMILIE)  # Bezugspersonen duerfen nur ansehen
+# Ziel fuer alle Eingabefelder der Seitenleiste. Fuer Bezugspersonen wird es unten durch
+# einen unsichtbaren Bereich ersetzt (gilt nur fuer diesen einen Seitenaufruf).
+SEITENLEISTE = st.sidebar
 
 WOCHENTAGE = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
 MONATSNAMEN = [
@@ -1158,7 +1162,7 @@ def add_eintrag(key, date_value, notiz):
 
 
 def date_list_widget(label, key):
-    with st.sidebar.expander(label, expanded=False):
+    with SEITENLEISTE.expander(label, expanded=False):
         d = st.date_input("Datum", key=f"pick_{key}")
         notiz = st.text_input(
             "Notiz (optional)", key=f"notiz_{key}",
@@ -1351,7 +1355,7 @@ def berechne_plan(start, end, wechseltag_idx, ziel_vater_pct,
 
 
 def seite_kalender():
-    st.sidebar.header("Zeitraum & Grundregeln")
+    SEITENLEISTE.header("Zeitraum & Grundregeln")
     # Re-Seed-Guard: Streamlit verwirft den Wert eines Widget-Keys, wenn das Widget in
     # einem Skriptdurchlauf nicht gezeichnet wird - z. B. weil gerade die Finanzen-Seite
     # aktiv war. Ohne diesen Schatten-Key wuerde ein Seitenwechsel den zuletzt gewaehlten
@@ -1360,15 +1364,15 @@ def seite_kalender():
         st.session_state["start_date_input"] = st.session_state["start_date_persistent"]
     if "end_date_input" not in st.session_state and "end_date_persistent" in st.session_state:
         st.session_state["end_date_input"] = st.session_state["end_date_persistent"]
-    start_date = st.sidebar.date_input("Start", dt.date.today(), key="start_date_input")
-    end_date = st.sidebar.date_input("Ende", dt.date.today() + dt.timedelta(days=120), key="end_date_input")
+    start_date = SEITENLEISTE.date_input("Start", dt.date.today(), key="start_date_input")
+    end_date = SEITENLEISTE.date_input("Ende", dt.date.today() + dt.timedelta(days=120), key="end_date_input")
     st.session_state["start_date_persistent"] = start_date
     st.session_state["end_date_persistent"] = end_date
 
-    st.sidebar.write("Wechselmodell")
+    SEITENLEISTE.write("Wechselmodell")
     _wm_optionen = ["Blockweise (Zielverteilung + Wechseltag)", "Wochenplan (fester Rhythmus pro Wochentag)"]
     _wm_index = 1 if st.session_state["wechselmodell"] == "wochenplan" else 0
-    _wm_auswahl = st.sidebar.radio(
+    _wm_auswahl = SEITENLEISTE.radio(
         "Wechselmodell", _wm_optionen, index=_wm_index,
         key="wechselmodell_auswahl", label_visibility="collapsed",
     )
@@ -1380,17 +1384,17 @@ def seite_kalender():
     # Gleicher Re-Seed-Guard wie oben bei start_date/end_date.
     if "wechselzeit_auswahl" not in st.session_state and "wechselzeit" in st.session_state:
         st.session_state["wechselzeit_auswahl"] = st.session_state["wechselzeit"]
-    wechselzeit = st.sidebar.time_input(
+    wechselzeit = SEITENLEISTE.time_input(
         "Wechselzeit (Übergabe-Uhrzeit)", dt.time(18, 0), key="wechselzeit_auswahl", step=900,
     )
     st.session_state["wechselzeit"] = wechselzeit
-    st.sidebar.caption(
+    SEITENLEISTE.caption(
         f"Die Übergabe an einem Wechseltag findet um {wechselzeit.strftime('%H:%M')} Uhr statt "
         "(nicht um Mitternacht) – wird im Kalender bei jedem Wechsel angezeigt."
     )
 
     if st.session_state["wechselmodell"] == "block":
-        st.sidebar.caption(
+        SEITENLEISTE.caption(
             "Ihr gebt eine Zielquote vor (z. B. 60/40) – die App verteilt die Tage am "
             "Wechseltag so, dass sich diese Quote über den Zeitraum einpendelt. Passend, "
             "wenn abwechselnd mehrtägige oder wöchentliche Blöcke geplant sind."
@@ -1404,9 +1408,9 @@ def seite_kalender():
         if "wechseltag_auswahl" not in st.session_state and "wechseltag_persistent" in st.session_state:
             st.session_state["wechseltag_auswahl"] = st.session_state["wechseltag_persistent"]
 
-        st.sidebar.write("Zielverteilung")
+        SEITENLEISTE.write("Zielverteilung")
         _ziel_vorschau = st.session_state.get("ziel_vater_slider", 60)
-        st.sidebar.markdown(
+        SEITENLEISTE.markdown(
             f"""
             <div style="display:flex;border-radius:6px;overflow:hidden;height:28px;
                         font-size:13px;color:white;font-weight:600;margin-bottom:2px;">
@@ -1422,18 +1426,18 @@ def seite_kalender():
             """,
             unsafe_allow_html=True,
         )
-        ziel_vater_pct = st.sidebar.slider(
+        ziel_vater_pct = SEITENLEISTE.slider(
             "Zielverteilung", 0, 100, 60, format="%d%%", label_visibility="collapsed",
             key="ziel_vater_slider",
         )
         ziel_mutter_pct = 100 - ziel_vater_pct
         st.session_state["ziel_vater_persistent"] = ziel_vater_pct
 
-        wechseltag_label = st.sidebar.selectbox("Wechseltag", WOCHENTAGE, index=2, key="wechseltag_auswahl")
+        wechseltag_label = SEITENLEISTE.selectbox("Wechseltag", WOCHENTAGE, index=2, key="wechseltag_auswahl")
         wechseltag_idx = WOCHENTAGE.index(wechseltag_label)
         st.session_state["wechseltag_persistent"] = wechseltag_label
     else:
-        st.sidebar.caption(
+        SEITENLEISTE.caption(
             f"Ihr legt direkt fest, wer an welchem Wochentag dran ist – z. B. Mo–Mi immer "
             f"{anzeige(ELTERNTEIL_1)}, Do–Fr immer {anzeige(ELTERNTEIL_2)}. Tage, die wöchentlich wechseln (z. B. ein "
             "alternierendes Wochenende, oder eine komplette Wechselwoche), markiert ihr "
@@ -1443,7 +1447,7 @@ def seite_kalender():
         for _tag in WOCHENTAGE:
             _wp_gespeichert = st.session_state["wochenplan"].get(_tag, "Wechselt wöchentlich")
             _wp_index = _wp_optionen.index(_wp_gespeichert) if _wp_gespeichert in _wp_optionen else 2
-            _wp_auswahl = st.sidebar.selectbox(
+            _wp_auswahl = SEITENLEISTE.selectbox(
                 _tag, _wp_optionen, index=_wp_index, key=f"wp_{_tag}", format_func=anzeige,
             )
             if _wp_auswahl != _wp_gespeichert:
@@ -1452,7 +1456,7 @@ def seite_kalender():
 
         if any(v == "Wechselt wöchentlich" for v in st.session_state["wochenplan"].values()):
             _wsp_index = 0 if st.session_state["wechsel_start_parent"] == "Elternteil 1" else 1
-            _wsp_auswahl = st.sidebar.radio(
+            _wsp_auswahl = SEITENLEISTE.radio(
                 "Wer hat die wechselnden Tage ab dem Startdatum zuerst?", [ELTERNTEIL_1, ELTERNTEIL_2],
                 index=_wsp_index, key="wechsel_start_parent_auswahl", horizontal=True, format_func=anzeige,
             )
@@ -1470,13 +1474,13 @@ def seite_kalender():
         ziel_mutter_pct = 100 - ziel_vater_pct
         wechseltag_label = WOCHENTAGE[2]
         wechseltag_idx = 2
-        st.sidebar.caption(
+        SEITENLEISTE.caption(
             f"→ ergibt rechnerisch ca. {anzeige(ELTERNTEIL_1)} {ziel_vater_pct}% / "
             f"{anzeige(ELTERNTEIL_2)} {ziel_mutter_pct}% im Durchschnitt."
         )
 
     speichere_daten()
-    with st.sidebar.expander("💾 Gespeicherte Eingaben"):
+    with SEITENLEISTE.expander("💾 Gespeicherte Eingaben"):
         st.caption("Alle Eingaben werden automatisch lokal gespeichert und beim nächsten Start wieder geladen.")
         if st.button("🗑️ Alle Eingaben zurücksetzen"):
             for key in ["wunsch_vater", "verzicht_vater", "wunsch_mutter", "verzicht_mutter"]:
@@ -1496,15 +1500,15 @@ def seite_kalender():
                 os.remove(DATEN_DATEI)
             st.rerun()
 
-    st.sidebar.header("Feste Wunsch-/Verzichtstage")
+    SEITENLEISTE.header("Feste Wunsch-/Verzichtstage")
     date_list_widget(f"{anzeige(ELTERNTEIL_1)} – Kind(er) sicher dabei", "wunsch_vater")
     date_list_widget(f"{anzeige(ELTERNTEIL_1)} – bewusst nicht dabei", "verzicht_vater")
     date_list_widget(f"{anzeige(ELTERNTEIL_2)} – Kind(er) sicher dabei", "wunsch_mutter")
     date_list_widget(f"{anzeige(ELTERNTEIL_2)} – bewusst nicht dabei", "verzicht_mutter")
 
     if st.session_state["wechselmodell"] == "block":
-        st.sidebar.header("Feste Wochentage")
-        with st.sidebar.expander(":material/event_repeat: Wiederkehrende Wochentags-Regel", expanded=False):
+        SEITENLEISTE.header("Feste Wochentage")
+        with SEITENLEISTE.expander(":material/event_repeat: Wiederkehrende Wochentags-Regel", expanded=False):
             st.caption(
                 f"Bestimmte Wochentage sind unabhängig vom Wechselrhythmus immer bei einem "
                 f"Elternteil (z. B. jeden Mittwoch bei {anzeige(ELTERNTEIL_1)}). Feste Wunsch-/Verzichtstage und "
@@ -1534,8 +1538,8 @@ def seite_kalender():
                     # die Wahl beim naechsten Programmstart sonst verloren gehen.
                     st.rerun()
 
-    st.sidebar.header("Ferienzeiten & Feiertage")
-    with st.sidebar.expander("Offizielle Ferien & Feiertage automatisch laden", expanded=False):
+    SEITENLEISTE.header("Ferienzeiten & Feiertage")
+    with SEITENLEISTE.expander("Offizielle Ferien & Feiertage automatisch laden", expanded=False):
         bundesland = st.selectbox(
             "Bundesland", list(FERIEN_DATEN.keys()), key="bundesland_auswahl", index=None,
             placeholder="Bundesland wählen …",
@@ -1577,7 +1581,7 @@ def seite_kalender():
         "haelftig": "Hälftig teilen (wochenweise, erste/zweite Hälfte)",
     }
 
-    with st.sidebar.expander("Ferien hinzufügen", expanded=False):
+    with SEITENLEISTE.expander("Ferien hinzufügen", expanded=False):
         f_name = st.text_input("Name", placeholder="z. B. Sommerferien", key="f_name")
         f_start = st.date_input("Von", key="f_start")
         f_end = st.date_input("Bis", key="f_end")
@@ -1614,7 +1618,7 @@ def seite_kalender():
             else:
                 st.warning("Bitte Name angeben und Start ≤ Ende.")
 
-    with st.sidebar.expander(f":material/list_alt: Alle Ferienzeiten & Regeln ({len(st.session_state['ferien'])})", expanded=False):
+    with SEITENLEISTE.expander(f":material/list_alt: Alle Ferienzeiten & Regeln ({len(st.session_state['ferien'])})", expanded=False):
         st.caption("Gilt für alle Ferien – auch automatisch geladene. Feste Wunsch-/Verzichtstage haben trotzdem immer Vorrang.")
         if not st.session_state["ferien"]:
             st.write("Noch keine Ferienzeiten erfasst.")
@@ -1658,7 +1662,7 @@ def seite_kalender():
                 st.rerun()
             st.divider()
 
-    with st.sidebar.expander("Feiertag hinzufügen", expanded=False):
+    with SEITENLEISTE.expander("Feiertag hinzufügen", expanded=False):
         st.caption("Rein informativ – wird im Kalender markiert, beeinflusst aber nicht, bei wem das Kind ist.")
         ft_name = st.text_input("Name", placeholder="z. B. Weihnachten", key="ft_name")
         ft_datum = st.date_input("Datum", key="ft_datum")
@@ -1669,7 +1673,7 @@ def seite_kalender():
             else:
                 st.warning("Bitte einen Namen angeben.")
 
-    with st.sidebar.expander(f"🎉 Alle Feiertage ({len(st.session_state['feiertage'])})", expanded=False):
+    with SEITENLEISTE.expander(f"🎉 Alle Feiertage ({len(st.session_state['feiertage'])})", expanded=False):
         st.caption("Rein informativ – auch automatisch geladene Feiertage. Ohne Einfluss auf die Zuordnung.")
         if not st.session_state["feiertage"]:
             st.write("Noch keine Feiertage erfasst.")
@@ -1833,20 +1837,24 @@ def seite_kalender():
             _wz_marker = ":material/schedule:" if info.get("wechselzeit_individuell") else ":material/sync_alt:"
             _wz_hinweis = " (abweichende Zeit nur an diesem Tag)" if info.get("wechselzeit_individuell") else ""
             st.caption(f"{_wz_marker} Wechseltag – Übergabe ab {info.get('wechselzeit') or wechselzeit.strftime('%H:%M')} Uhr{_wz_hinweis}")
-            _wz_aktuell = st.session_state["wechselzeit_ausnahmen"].get(tag, wechselzeit)
-            _wz_neu = st.time_input(
-                "Übergabezeit an diesem Tag", value=_wz_aktuell, key="tag_panel_wechselzeit", step=900,
-            )
-            wzc1, wzc2 = st.columns(2)
-            if wzc1.button(":material/schedule: Nur für diesen Tag übernehmen", key="tag_panel_wz_setzen", width="stretch"):
-                st.session_state["wechselzeit_ausnahmen"][tag] = _wz_neu
-                st.rerun()
-            if info.get("wechselzeit_individuell"):
-                if wzc2.button(":material/undo: Standardzeit verwenden", key="tag_panel_wz_reset", width="stretch"):
-                    st.session_state["wechselzeit_ausnahmen"].pop(tag, None)
+            if not NUR_LESEN:
+                _wz_aktuell = st.session_state["wechselzeit_ausnahmen"].get(tag, wechselzeit)
+                _wz_neu = st.time_input(
+                    "Übergabezeit an diesem Tag", value=_wz_aktuell, key="tag_panel_wechselzeit", step=900,
+                )
+                wzc1, wzc2 = st.columns(2)
+                if wzc1.button(":material/schedule: Nur für diesen Tag übernehmen", key="tag_panel_wz_setzen", width="stretch"):
+                    st.session_state["wechselzeit_ausnahmen"][tag] = _wz_neu
                     st.rerun()
+                if info.get("wechselzeit_individuell"):
+                    if wzc2.button(":material/undo: Standardzeit verwenden", key="tag_panel_wz_reset", width="stretch"):
+                        st.session_state["wechselzeit_ausnahmen"].pop(tag, None)
+                        st.rerun()
         if isinstance(info["konflikt"], str):
             st.warning(info["konflikt"], icon=":material/warning:")
+        if NUR_LESEN:
+            st.caption(":material/visibility: Ändern können nur die Eltern.")
+            return
         notiz_eingabe = st.text_input(
             "Notiz (optional, gilt für Wunsch/Verzicht)", key="tag_panel_notiz",
             placeholder="z. B. Familienfeier, Geburtstag …",
@@ -2326,19 +2334,20 @@ def seite_pinnwand():
                             _haken = st.checkbox(
                                 _p["text"], value=_p["erledigt"],
                                 key=f"chk_{_p['id']}_{_reset_suffix}",
+                                disabled=NUR_LESEN,
                             )
                             if _haken != _p["erledigt"]:
                                 _p["erledigt"] = _haken
                                 speichere_daten()
                         with _pc2:
-                            if st.button(":material/delete:", key=f"del_check_{_p['id']}"):
+                            if st.button(":material/delete:", key=f"del_check_{_p['id']}", disabled=NUR_LESEN):
                                 st.session_state["uebergabe_checkliste"] = [
                                     x for x in st.session_state["uebergabe_checkliste"] if x["id"] != _p["id"]
                                 ]
                                 speichere_daten()
                                 st.rerun()
                     if any(p["erledigt"] for p in _checkliste):
-                        if st.button(":material/refresh: Für nächstes Mal zurücksetzen", key="checkliste_reset"):
+                        if st.button(":material/refresh: Für nächstes Mal zurücksetzen", key="checkliste_reset", disabled=NUR_LESEN):
                             for _p in st.session_state["uebergabe_checkliste"]:
                                 _p["erledigt"] = False
                             st.session_state["checkliste_reset_key"] += 1
@@ -2365,7 +2374,7 @@ def seite_pinnwand():
                                 st.write(f":material/call: {_k['telefon']}")
                             if _k.get("notiz"):
                                 st.caption(_k["notiz"])
-                            if st.button(":material/delete: Entfernen", key=f"del_kontakt_{_k['id']}", width="stretch"):
+                            if st.button(":material/delete: Entfernen", key=f"del_kontakt_{_k['id']}", width="stretch", disabled=NUR_LESEN):
                                 st.session_state["notfallkontakte"] = [
                                     x for x in st.session_state["notfallkontakte"] if x["id"] != _k["id"]
                                 ]
@@ -2388,7 +2397,7 @@ def seite_pinnwand():
                         with _fic1:
                             st.write(_fi["text"])
                         with _fic2:
-                            if st.button(":material/delete:", key=f"del_festeinfo_{_fi['id']}"):
+                            if st.button(":material/delete:", key=f"del_festeinfo_{_fi['id']}", disabled=NUR_LESEN):
                                 st.session_state["feste_infos"] = [
                                     x for x in st.session_state["feste_infos"] if x["id"] != _fi["id"]
                                 ]
@@ -2446,125 +2455,126 @@ def seite_pinnwand():
 
     # ---------- Neuer Eintrag ----------
     st.markdown("#### :material/add_circle: Neuer Eintrag")
-    if DOKUMENTE_AKTIV:
-        _neu_c0, _neu_c1, _neu_c2, _neu_c3 = st.columns(4)
-    else:
-        _neu_c0, _neu_c1, _neu_c3 = st.columns(3)
+    if not NUR_LESEN:
+        if DOKUMENTE_AKTIV:
+            _neu_c0, _neu_c1, _neu_c2, _neu_c3 = st.columns(4)
+        else:
+            _neu_c0, _neu_c1, _neu_c3 = st.columns(3)
 
-    with _neu_c0:
-        with st.expander(":material/checklist: Checklisten-Punkt hinzufügen", expanded=False):
-            st.caption(
-                "Dinge, die bei jedem Wechsel mit umziehen sollen – z. B. Sportzeug, "
-                "Medikamente, Kuscheltier, Ladekabel."
-            )
-            _chk_suffix = st.session_state["checkliste_form_key"]
-            _chk_text = st.text_input(
-                "Was soll mit?", key=f"chk_text_{_chk_suffix}", placeholder="z. B. Sportzeug",
-            )
-            if st.button(":material/add: Zur Liste hinzufügen", key="checkliste_speichern", type="primary"):
-                if _chk_text.strip():
-                    st.session_state["uebergabe_checkliste"].append({
-                        "id": uuid.uuid4().hex[:8],
-                        "text": _chk_text.strip(),
-                        "erledigt": False,
-                    })
-                    st.session_state["checkliste_form_key"] += 1
-                    speichere_daten()
-                    st.rerun()
-                else:
-                    st.warning("Bitte einen Text eingeben.")
-
-    with _neu_c1:
-        with st.expander(":material/person_add: Notfallkontakt hinzufügen", expanded=False):
-            st.caption(
-                "Telefonnummern, die im Notfall schnell griffbereit sein sollten – z. B. "
-                "Großeltern, Kinderarzt, Schule oder Kita."
-            )
-            _nk_suffix = st.session_state["nk_form_key"]
-            _nk_name = st.text_input(
-                "Name", key=f"nk_name_{_nk_suffix}", placeholder="z. B. Oma Erika",
-            )
-            _nk_rolle = st.text_input(
-                "Rolle / Bezug", key=f"nk_rolle_{_nk_suffix}",
-                placeholder="z. B. Großmutter, Kinderarzt, Schule",
-            )
-            _nk_telefon = st.text_input(
-                "Telefonnummer", key=f"nk_telefon_{_nk_suffix}", placeholder="z. B. 0170 1234567",
-            )
-            _nk_notiz = st.text_input(
-                "Notiz (optional)", key=f"nk_notiz_{_nk_suffix}", placeholder="z. B. nur werktags erreichbar",
-            )
-            if st.button(":material/add: Kontakt speichern", key="nk_speichern", type="primary"):
-                if _nk_name.strip() and _nk_telefon.strip():
-                    st.session_state["notfallkontakte"].append({
-                        "id": uuid.uuid4().hex[:8],
-                        "name": _nk_name.strip(),
-                        "rolle": _nk_rolle.strip(),
-                        "telefon": _nk_telefon.strip(),
-                        "notiz": _nk_notiz.strip(),
-                    })
-                    st.session_state["nk_form_key"] += 1
-                    speichere_daten()
-                    st.rerun()
-                else:
-                    st.warning("Bitte mindestens Name und Telefonnummer angeben.")
-
-    if DOKUMENTE_AKTIV:
-        with _neu_c2:
-            with st.expander(":material/upload_file: Dokument hochladen", expanded=False):
+        with _neu_c0:
+            with st.expander(":material/checklist: Checklisten-Punkt hinzufügen", expanded=False):
                 st.caption(
-                    "Fotos oder PDFs von wichtigen Dokumenten – z. B. Stundenplan, Packliste für die "
-                    "Klassenfahrt, eine Seite aus dem Impfausweis."
+                    "Dinge, die bei jedem Wechsel mit umziehen sollen – z. B. Sportzeug, "
+                    "Medikamente, Kuscheltier, Ladekabel."
                 )
-                _pw_suffix = st.session_state["pw_doku_form_key"]
-                _pw_titel = st.text_input(
-                    "Titel", key=f"pw_doku_titel_{_pw_suffix}", placeholder="z. B. Stundenplan Mia",
+                _chk_suffix = st.session_state["checkliste_form_key"]
+                _chk_text = st.text_input(
+                    "Was soll mit?", key=f"chk_text_{_chk_suffix}", placeholder="z. B. Sportzeug",
                 )
-                _pw_datei = st.file_uploader(
-                    "Foto oder PDF", type=["png", "jpg", "jpeg", "pdf"],
-                    key=f"pw_doku_datei_{_pw_suffix}",
-                )
-                if st.button(":material/add: Hinzufügen", key="pw_doku_speichern", type="primary"):
-                    if _pw_datei is not None and _pw_titel.strip():
-                        _ext = os.path.splitext(_pw_datei.name)[1].lower()
-                        _neuer_dateiname = f"{uuid.uuid4().hex[:10]}{_ext}"
-                        _pfad = os.path.join(DOKUMENTE_ORDNER, _neuer_dateiname)
-                        with open(_pfad, "wb") as f:
-                            f.write(_pw_datei.getbuffer())
-                        st.session_state["dokumente"].append({
+                if st.button(":material/add: Zur Liste hinzufügen", key="checkliste_speichern", type="primary"):
+                    if _chk_text.strip():
+                        st.session_state["uebergabe_checkliste"].append({
                             "id": uuid.uuid4().hex[:8],
-                            "titel": _pw_titel.strip(),
-                            "dateiname": _neuer_dateiname,
-                            "original_name": _pw_datei.name,
-                            "hochgeladen_am": dt.date.today().isoformat(),
+                            "text": _chk_text.strip(),
+                            "erledigt": False,
                         })
-                        st.session_state["pw_doku_form_key"] += 1
+                        st.session_state["checkliste_form_key"] += 1
                         speichere_daten()
                         st.rerun()
                     else:
-                        st.warning("Bitte einen Titel eingeben und eine Datei auswählen.")
+                        st.warning("Bitte einen Text eingeben.")
 
-    with _neu_c3:
-        with st.expander(":material/sticky_note_2: Feste Info hinzufügen", expanded=False):
-            st.caption(
-                "Dinge, die immer gelten und nur ab und an angepasst werden – z. B. Zahlencode "
-                "Fahrradschloss, WLAN-Passwort, Hausschlüssel-Versteck."
-            )
-            _fi_suffix = st.session_state["feste_info_form_key"]
-            _fi_text = st.text_input(
-                "Info", key=f"fi_text_{_fi_suffix}", placeholder="z. B. Zahlencode Fahrradschloss: 4711",
-            )
-            if st.button(":material/add: Speichern", key="feste_info_speichern", type="primary"):
-                if _fi_text.strip():
-                    st.session_state["feste_infos"].append({
-                        "id": uuid.uuid4().hex[:8],
-                        "text": _fi_text.strip(),
-                    })
-                    st.session_state["feste_info_form_key"] += 1
-                    speichere_daten()
-                    st.rerun()
-                else:
-                    st.warning("Bitte einen Text eingeben.")
+        with _neu_c1:
+            with st.expander(":material/person_add: Notfallkontakt hinzufügen", expanded=False):
+                st.caption(
+                    "Telefonnummern, die im Notfall schnell griffbereit sein sollten – z. B. "
+                    "Großeltern, Kinderarzt, Schule oder Kita."
+                )
+                _nk_suffix = st.session_state["nk_form_key"]
+                _nk_name = st.text_input(
+                    "Name", key=f"nk_name_{_nk_suffix}", placeholder="z. B. Oma Erika",
+                )
+                _nk_rolle = st.text_input(
+                    "Rolle / Bezug", key=f"nk_rolle_{_nk_suffix}",
+                    placeholder="z. B. Großmutter, Kinderarzt, Schule",
+                )
+                _nk_telefon = st.text_input(
+                    "Telefonnummer", key=f"nk_telefon_{_nk_suffix}", placeholder="z. B. 0170 1234567",
+                )
+                _nk_notiz = st.text_input(
+                    "Notiz (optional)", key=f"nk_notiz_{_nk_suffix}", placeholder="z. B. nur werktags erreichbar",
+                )
+                if st.button(":material/add: Kontakt speichern", key="nk_speichern", type="primary"):
+                    if _nk_name.strip() and _nk_telefon.strip():
+                        st.session_state["notfallkontakte"].append({
+                            "id": uuid.uuid4().hex[:8],
+                            "name": _nk_name.strip(),
+                            "rolle": _nk_rolle.strip(),
+                            "telefon": _nk_telefon.strip(),
+                            "notiz": _nk_notiz.strip(),
+                        })
+                        st.session_state["nk_form_key"] += 1
+                        speichere_daten()
+                        st.rerun()
+                    else:
+                        st.warning("Bitte mindestens Name und Telefonnummer angeben.")
+
+        if DOKUMENTE_AKTIV:
+            with _neu_c2:
+                with st.expander(":material/upload_file: Dokument hochladen", expanded=False):
+                    st.caption(
+                        "Fotos oder PDFs von wichtigen Dokumenten – z. B. Stundenplan, Packliste für die "
+                        "Klassenfahrt, eine Seite aus dem Impfausweis."
+                    )
+                    _pw_suffix = st.session_state["pw_doku_form_key"]
+                    _pw_titel = st.text_input(
+                        "Titel", key=f"pw_doku_titel_{_pw_suffix}", placeholder="z. B. Stundenplan Mia",
+                    )
+                    _pw_datei = st.file_uploader(
+                        "Foto oder PDF", type=["png", "jpg", "jpeg", "pdf"],
+                        key=f"pw_doku_datei_{_pw_suffix}",
+                    )
+                    if st.button(":material/add: Hinzufügen", key="pw_doku_speichern", type="primary"):
+                        if _pw_datei is not None and _pw_titel.strip():
+                            _ext = os.path.splitext(_pw_datei.name)[1].lower()
+                            _neuer_dateiname = f"{uuid.uuid4().hex[:10]}{_ext}"
+                            _pfad = os.path.join(DOKUMENTE_ORDNER, _neuer_dateiname)
+                            with open(_pfad, "wb") as f:
+                                f.write(_pw_datei.getbuffer())
+                            st.session_state["dokumente"].append({
+                                "id": uuid.uuid4().hex[:8],
+                                "titel": _pw_titel.strip(),
+                                "dateiname": _neuer_dateiname,
+                                "original_name": _pw_datei.name,
+                                "hochgeladen_am": dt.date.today().isoformat(),
+                            })
+                            st.session_state["pw_doku_form_key"] += 1
+                            speichere_daten()
+                            st.rerun()
+                        else:
+                            st.warning("Bitte einen Titel eingeben und eine Datei auswählen.")
+
+        with _neu_c3:
+            with st.expander(":material/sticky_note_2: Feste Info hinzufügen", expanded=False):
+                st.caption(
+                    "Dinge, die immer gelten und nur ab und an angepasst werden – z. B. Zahlencode "
+                    "Fahrradschloss, WLAN-Passwort, Hausschlüssel-Versteck."
+                )
+                _fi_suffix = st.session_state["feste_info_form_key"]
+                _fi_text = st.text_input(
+                    "Info", key=f"fi_text_{_fi_suffix}", placeholder="z. B. Zahlencode Fahrradschloss: 4711",
+                )
+                if st.button(":material/add: Speichern", key="feste_info_speichern", type="primary"):
+                    if _fi_text.strip():
+                        st.session_state["feste_infos"].append({
+                            "id": uuid.uuid4().hex[:8],
+                            "text": _fi_text.strip(),
+                        })
+                        st.session_state["feste_info_form_key"] += 1
+                        speichere_daten()
+                        st.rerun()
+                    else:
+                        st.warning("Bitte einen Text eingeben.")
 
     speichere_daten()
 
@@ -3071,15 +3081,22 @@ def seite_regeln():
     )
 
 
-pg = st.navigation(
-    [
-        st.Page(seite_kalender, title="Kalender", icon=":material/calendar_month:", default=True),
-        st.Page(seite_finanzen, title="Kostenteilung", icon=":material/account_balance_wallet:"),
-        st.Page(seite_pinnwand, title="Pinnwand", icon=":material/push_pin:"),
-        st.Page(seite_journal, title="Journal", icon=":material/auto_stories:"),
-        st.Page(seite_regeln, title="Ideen", icon=":material/lightbulb:", url_path="ideen"),
-        st.Page(seite_einstellungen, title="Einstellungen", icon=":material/tune:"),
-    ],
-    position="top",
-)
+_seiten = [st.Page(seite_kalender, title="Kalender", icon=":material/calendar_month:", default=True)]
+if not NUR_LESEN:  # Kosten, Journal und Einstellungen nur fuer Eltern
+    _seiten.append(st.Page(seite_finanzen, title="Kostenteilung", icon=":material/account_balance_wallet:"))
+_seiten.append(st.Page(seite_pinnwand, title="Pinnwand", icon=":material/push_pin:"))
+if not NUR_LESEN:
+    _seiten.append(st.Page(seite_journal, title="Journal", icon=":material/auto_stories:"))
+_seiten.append(st.Page(seite_regeln, title="Ideen", icon=":material/lightbulb:", url_path="ideen"))
+if not NUR_LESEN:
+    _seiten.append(st.Page(seite_einstellungen, title="Einstellungen", icon=":material/tune:"))
+pg = st.navigation(_seiten, position="top")
+
+if NUR_LESEN:
+    st.info(f"Du siehst **{FAMILIE['name']}** als Bezugsperson. Ändern können nur die Eltern.",
+            icon=":material/visibility:")
+    # Die Eingabefelder der Seiten stehen in der Seitenleiste. Fuer Bezugspersonen landen sie
+    # in einem unsichtbaren Bereich: die Werte werden weiter berechnet, aber nicht angezeigt.
+    st.html("<style>.st-key-pe_nur_lesen_ausgeblendet { display: none !important; }</style>")
+    SEITENLEISTE = st.container(key="pe_nur_lesen_ausgeblendet")
 pg.run()
