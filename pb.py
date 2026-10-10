@@ -99,6 +99,127 @@ def loeschen(sammlung, datensatz_id):
     return _anfrage("DELETE", f"collections/{sammlung}/records/{datensatz_id}")
 
 
+# ---------------------------------------------------------------- Aenderungsprotokoll
+
+BEREICHE = {
+    "ferien": "Kalender", "feiertage": "Kalender",
+    "wunsch_vater": "Kalender", "verzicht_vater": "Kalender",
+    "wunsch_mutter": "Kalender", "verzicht_mutter": "Kalender",
+    "notfallkontakte": "Pinnwand", "uebergabe_checkliste": "Pinnwand", "feste_infos": "Pinnwand",
+    "ausgaben": "Kosten", "ausgleichszahlungen": "Kosten",
+    "journal_eintraege": "Journal",
+}
+
+PLAN_BEZEICHNUNGEN = {
+    "rollennamen": "Namen", "rollenfarben": "Farben", "start_date": "Zeitraum",
+    "end_date": "Zeitraum", "ziel_vater_pct": "Zielverteilung", "wechseltag": "Wechseltag",
+    "wechselmodell": "Wechselmodell", "wochenplan": "Wochenplan",
+    "wechsel_start_parent": "Wochenplan", "wechselzeit": "Wechselzeit",
+    "wechselzeit_ausnahmen": "Wechselzeit an einzelnen Tagen",
+    "feste_wochentage": "Feste Wochentage",
+}
+
+
+def _datum(text):
+    """'2026-10-03' -> '03.10.2026' (alles andere unveraendert)."""
+    if isinstance(text, str) and len(text) == 10 and text[4] == "-" and text[7] == "-":
+        return f"{text[8:10]}.{text[5:7]}.{text[0:4]}"
+    return text or ""
+
+
+def _euro(betrag):
+    try:
+        return f"{float(betrag):,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
+    except (TypeError, ValueError):
+        return ""
+
+
+def _elternname(daten, nummer):
+    namen = daten.get("rollennamen") or {}
+    return namen.get(f"Elternteil {nummer}", f"Elternteil {nummer}")
+
+
+def _beschreibe(name, e, daten):
+    """Kurze, lesbare Bezeichnung eines Eintrags fuers Protokoll.
+    Bewusst OHNE sensible Inhalte (Journal-Text, feste Infos wie Passwoerter)."""
+    if name == "ferien":
+        return f"Ferien „{e.get('name', '')}“ ({_datum(e.get('start'))}–{_datum(e.get('end'))})"
+    if name == "feiertage":
+        return f"Feiertag „{e.get('name', '')}“ ({_datum(e.get('datum'))})"
+    if name.startswith(("wunsch_", "verzicht_")):
+        art = "Wunschtag" if name.startswith("wunsch_") else "Verzichtstag"
+        nummer = 1 if name.endswith("_vater") else 2
+        return f"{art} {_elternname(daten, nummer)} am {_datum(e.get('datum'))}"
+    if name == "notfallkontakte":
+        return f"Notfallkontakt „{e.get('name', '')}“"
+    if name == "uebergabe_checkliste":
+        return f"Checklisten-Punkt „{e.get('text', '')}“"
+    if name == "feste_infos":
+        return "Feste Info"
+    if name == "ausgaben":
+        return f"Ausgabe „{e.get('beschreibung', '')}“ ({_euro(e.get('betrag'))})"
+    if name == "ausgleichszahlungen":
+        return f"Ausgleichszahlung über {_euro(e.get('betrag'))}"
+    if name == "journal_eintraege":
+        return f"Journal-Eintrag vom {_datum(e.get('datum'))}"
+    return "Eintrag"
+
+
+def protokollieren(familie, bereich, beschreibung):
+    """Haelt fest, wer was geaendert hat. Darf die App nie blockieren."""
+    if not ist_elternteil(familie):
+        return
+    nutzer = st.session_state["pb_nutzer"]
+    try:
+        anlegen("aenderungen", {
+            "familie": familie["id"],
+            "nutzer": nutzer["id"],
+            "nutzer_name": nutzer.get("name") or nutzer.get("email", ""),
+            "bereich": bereich,
+            "beschreibung": beschreibung[:500],
+        })
+    except PBFehler:
+        pass
+
+
+def _listen_aenderung_beschreiben(name, neu, entfernt, daten):
+    """Fasst die Unterschiede einer Liste in einem Satz zusammen."""
+    neu = [json.loads(k) for k in neu]
+    entfernt = [json.loads(k) for k in entfernt]
+    # Gleiche ID in beiden Listen = derselbe Eintrag wurde geaendert
+    ids_neu = {e.get("id") for e in neu if e.get("id")}
+    geaendert = [e for e in neu if e.get("id") and e["id"] in {x.get("id") for x in entfernt}]
+    neu = [e for e in neu if e not in geaendert]
+    entfernt = [e for e in entfernt if not (e.get("id") and e["id"] in ids_neu)]
+
+    teile = []
+    for wort, eintraege in (("hinzugefügt", neu), ("geändert", geaendert), ("entfernt", entfernt)):
+        if not eintraege:
+            continue
+        if name == "uebergabe_checkliste" and wort == "geändert":
+            for e in eintraege:
+                status = "abgehakt" if e.get("erledigt") else "Haken entfernt"
+                teile.append(f"{_beschreibe(name, e, daten)} {status}")
+        elif len(eintraege) > 3:
+            teile.append(f"{len(eintraege)} Einträge {wort}")
+        else:
+            teile.extend(f"{_beschreibe(name, e, daten)} {wort}" for e in eintraege)
+    return "; ".join(teile)
+
+
+def verlauf_laden(familie, anzahl=100):
+    """Die letzten Aenderungen einer Familie, neueste zuerst."""
+    antwort = _anfrage("GET", "collections/aenderungen/records",
+                       params={"filter": f'familie = "{familie["id"]}"', "sort": "-created",
+                               "perPage": anzahl})
+    return antwort["items"]
+
+
+def plan_eltern():
+    """IDs der Nutzer, die im Plan als Elternteil 1 bzw. 2 hinterlegt sind."""
+    return st.session_state.get("pb_plan_eltern", ("", ""))
+
+
 # ---------------------------------------------------------------- Login
 
 def abmelden():
@@ -235,6 +356,7 @@ def plan_laden(familie):
         return {}
     plan = treffer[0]
     st.session_state["pb_plan_id"] = plan["id"]
+    st.session_state["pb_plan_eltern"] = (plan.get("elternteil_1", ""), plan.get("elternteil_2", ""))
     einstellungen = plan.get("einstellungen") or {}
     st.session_state["pb_plan_stand"] = json.dumps(einstellungen, sort_keys=True)
     return einstellungen
@@ -249,9 +371,14 @@ def plan_speichern(familie, daten):
     stand = json.dumps(einstellungen, sort_keys=True)
     if stand == st.session_state.get("pb_plan_stand"):
         return
+    vorher = json.loads(st.session_state.get("pb_plan_stand") or "{}")
     try:
         if st.session_state.get("pb_plan_id"):
             aendern("plan", st.session_state["pb_plan_id"], {"einstellungen": einstellungen})
+            geaendert = sorted({PLAN_BEZEICHNUNGEN.get(k, k) for k in einstellungen
+                                if _schluessel(einstellungen.get(k)) != _schluessel(vorher.get(k))})
+            if geaendert:
+                protokollieren(familie, "Einstellungen", "Geändert: " + ", ".join(geaendert))
         else:
             eltern = familie["eltern"]
             neu = anlegen("plan", {
@@ -261,6 +388,7 @@ def plan_speichern(familie, daten):
                 "einstellungen": einstellungen,
             })
             st.session_state["pb_plan_id"] = neu["id"]
+            st.session_state["pb_plan_eltern"] = (neu.get("elternteil_1", ""), neu.get("elternteil_2", ""))
         st.session_state["pb_plan_stand"] = stand
     except PBFehler as fehler:
         st.warning(f"Der Plan konnte nicht gespeichert werden ({fehler}).")
@@ -321,10 +449,11 @@ def listen_speichern(familie, daten):
                     behalten.append((schluessel, datensatz_id))
                 else:
                     zu_loeschen.append((schluessel, datensatz_id))
+            neue = list(offen.elements())
             try:
                 for schluessel, datensatz_id in zu_loeschen:
                     loeschen(sammlung, datensatz_id)
-                for schluessel in offen.elements():
+                for schluessel in neue:
                     neu = anlegen(sammlung, {"familie": familie["id"], "liste": name,
                                              "eintrag": json.loads(schluessel)})
                     behalten.append((schluessel, neu["id"]))
@@ -332,6 +461,10 @@ def listen_speichern(familie, daten):
                 st.warning(f"Änderungen an '{name}' konnten nicht gespeichert werden ({fehler}).")
                 continue
             stand[name] = behalten
+            if neue or zu_loeschen:
+                text = _listen_aenderung_beschreiben(name, neue, [k for k, _ in zu_loeschen], daten)
+                if text:
+                    protokollieren(familie, BEREICHE.get(name, name), text)
 
 
 # ---------------------------------------------------------------- Kinder
@@ -369,3 +502,8 @@ def kinder_speichern(familie, daten):
         st.warning(f"Änderungen an den Kindern konnten nicht gespeichert werden ({fehler}).")
         return
     st.session_state["pb_kinder_stand"] = behalten
+    hinzu = list(offen.elements())
+    weg = [v for v, i in stand if i in zu_loeschen]
+    if hinzu or weg:
+        teile = [f"„{v}“ hinzugefügt" for v in hinzu] + [f"„{v}“ entfernt" for v in weg]
+        protokollieren(familie, "Kinder", "Kind " + "; ".join(teile))

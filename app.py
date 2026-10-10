@@ -3081,6 +3081,46 @@ def seite_regeln():
     )
 
 
+def _ortszeit(zeitstempel):
+    """PocketBase speichert in UTC ('2026-10-10 13:30:18.789Z') -> deutsche Ortszeit."""
+    try:
+        from zoneinfo import ZoneInfo
+        zeit = dt.datetime.fromisoformat(zeitstempel.replace("Z", "+00:00"))
+        return zeit.astimezone(ZoneInfo("Europe/Berlin")).strftime("%d.%m.%Y %H:%M")
+    except Exception:
+        return zeitstempel[:16] + " (UTC)"
+
+
+def seite_verlauf():
+    st.header("Verlauf")
+    st.caption(
+        "Wer hat wann was geändert? Hier stehen die letzten 100 Änderungen. "
+        "Inhalte aus dem Journal und den festen Infos werden bewusst nicht mitgeschrieben."
+    )
+    try:
+        eintraege = pb.verlauf_laden(FAMILIE)
+    except pb.PBFehler as fehler:
+        st.warning(f"Der Verlauf konnte nicht geladen werden ({fehler}).")
+        return
+    if not eintraege:
+        st.info("Bisher wurden noch keine Änderungen festgehalten.")
+        return
+    _e1, _e2 = pb.plan_eltern()
+
+    def _wer(r):
+        if r.get("nutzer") and r["nutzer"] == _e1:
+            return anzeige(ELTERNTEIL_1)
+        if r.get("nutzer") and r["nutzer"] == _e2:
+            return anzeige(ELTERNTEIL_2)
+        return r.get("nutzer_name") or "Unbekannt"
+
+    st.dataframe(
+        [{"Wann": _ortszeit(r["created"]), "Wer": _wer(r), "Bereich": r.get("bereich", ""),
+          "Änderung": r.get("beschreibung", "")} for r in eintraege],
+        hide_index=True, width="stretch",
+    )
+
+
 _seiten = [st.Page(seite_kalender, title="Kalender", icon=":material/calendar_month:", default=True)]
 if not NUR_LESEN:  # Kosten, Journal und Einstellungen nur fuer Eltern
     _seiten.append(st.Page(seite_finanzen, title="Kostenteilung", icon=":material/account_balance_wallet:"))
@@ -3090,6 +3130,7 @@ if not NUR_LESEN:
 _seiten.append(st.Page(seite_regeln, title="Ideen", icon=":material/lightbulb:", url_path="ideen"))
 if not NUR_LESEN:
     _seiten.append(st.Page(seite_einstellungen, title="Einstellungen", icon=":material/tune:"))
+    _seiten.append(st.Page(seite_verlauf, title="Verlauf", icon=":material/history:", url_path="verlauf"))
 pg = st.navigation(_seiten, position="top")
 
 if NUR_LESEN:
