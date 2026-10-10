@@ -29,6 +29,15 @@ NUR_LESEN = not pb.ist_elternteil(FAMILIE)  # Bezugspersonen duerfen nur ansehen
 # einen unsichtbaren Bereich ersetzt (gilt nur fuer diesen einen Seitenaufruf).
 SEITENLEISTE = st.sidebar
 
+# Feedback der Testfamilien (spaeter z. B. durch den Link zu einer Umfrage ersetzen)
+FEEDBACK_URL = "mailto:feedback@patcheasy.de?subject=Feedback%20zur%20PatchEasy-Beta"
+st.sidebar.link_button(":material/chat: Feedback geben", FEEDBACK_URL, width="stretch")
+
+
+def _ist_handy():
+    agent = st.context.headers.get("User-Agent", "")
+    return isinstance(agent, str) and ("Mobi" in agent or "Android" in agent)
+
 WOCHENTAGE = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
 MONATSNAMEN = [
     "Januar", "Februar", "März", "April", "Mai", "Juni",
@@ -1355,6 +1364,9 @@ def berechne_plan(start, end, wechseltag_idx, ziel_vater_pct,
 
 
 def seite_kalender():
+    if _ist_handy() and not NUR_LESEN:
+        st.caption(":material/menu: Tipp: Zeitraum, Wechselmodell, Ferien und Wunschtage stellst du "
+                   "über die Seitenleiste ein – das Symbol oben links öffnet sie.")
     SEITENLEISTE.header("Zeitraum & Grundregeln")
     # Re-Seed-Guard: Streamlit verwirft den Wert eines Widget-Keys, wenn das Widget in
     # einem Skriptdurchlauf nicht gezeichnet wird - z. B. weil gerade die Finanzen-Seite
