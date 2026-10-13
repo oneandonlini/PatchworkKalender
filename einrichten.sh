@@ -64,7 +64,8 @@ if [[ ! -x "$PB_ORDNER/pocketbase" ]] || ! "$PB_ORDNER/pocketbase" --version | g
 fi
 chown -R "$BENUTZER:$BENUTZER" "$PB_ORDNER"
 
-if ! sudo -u "$BENUTZER" test -f "$PB_ORDNER/pb_data/data.db"; then
+# Merkdatei statt data.db pruefen: so wird auch nach einem abgebrochenen Versuch erneut gefragt
+if [[ ! -f "$PB_ORDNER/.admin_angelegt" ]]; then
   echo
   echo "Jetzt das Admin-Konto fuer PocketBase anlegen."
   read -rp  "  E-Mail-Adresse fuer den Admin: " PB_EMAIL
@@ -74,9 +75,11 @@ if ! sudo -u "$BENUTZER" test -f "$PB_ORDNER/pb_data/data.db"; then
     if [[ "$PB_PW" == "$PB_PW2" && ${#PB_PW} -ge 10 ]]; then break; fi
     echo "  Passwoerter stimmen nicht ueberein oder sind zu kurz. Bitte nochmal."
   done
-  sudo -u "$BENUTZER" "$PB_ORDNER/pocketbase" superuser upsert "$PB_EMAIL" "$PB_PW" \
-    --dir="$PB_ORDNER/pb_data" >/dev/null
+  # "--" sorgt dafuer, dass ein Passwort, das mit "-" beginnt, nicht als Option gelesen wird
+  sudo -u "$BENUTZER" "$PB_ORDNER/pocketbase" superuser upsert \
+    --dir="$PB_ORDNER/pb_data" -- "$PB_EMAIL" "$PB_PW" >/dev/null
   unset PB_PW PB_PW2
+  touch "$PB_ORDNER/.admin_angelegt"
   echo "  Admin-Konto angelegt."
 fi
 
