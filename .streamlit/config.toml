@@ -1,0 +1,49 @@
+[server]
+# Erlaubt, Dateien aus dem Ordner "static" auszuliefern (hier: die Schrift Poppins)
+enableStaticServing = true
+
+[theme]
+base = "light"
+primaryColor = "#534AB7"
+backgroundColor = "#EAE9F6"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#2B2A3D"
+linkColor = "#534AB7"
+borderColor = "#D9D4EC"
+# Schrift wird lokal mitgeliefert (Ordner "static") statt von Google geladen -
+# so werden keine IP-Adressen der Nutzer an Google uebertragen.
+font = "Poppins"
+headingFont = "Poppins"
+baseRadius = "large"
+buttonRadius = "full"
+showWidgetBorder = true
+
+[[theme.fontFaces]]
+family = "Poppins"
+url = "app/static/Poppins-Regular.ttf"
+weight = 400
+
+[[theme.fontFaces]]
+family = "Poppins"
+url = "app/static/Poppins-Medium.ttf"
+weight = 500
+
+[[theme.fontFaces]]
+family = "Poppins"
+url = "app/static/Poppins-SemiBold.ttf"
+weight = 600
+
+[[theme.fontFaces]]
+family = "Poppins"
+url = "app/static/Poppins-Bold.ttf"
+weight = 700
+
+[[theme.fontFaces]]
+family = "Poppins"
+url = "app/static/Poppins-ExtraBold.ttf"
+weight = 800
+
+[theme.sidebar]
+backgroundColor = "#E2EBED"
+secondaryBackgroundColor = "#FFFFFF"
+borderColor = "#CFE0E1"
