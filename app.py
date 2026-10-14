@@ -2026,7 +2026,34 @@ def seite_kalender():
             cur = dt.date(cur.year, cur.month + 1, 1)
 
     with st.container(key="kalender_bereich"):
-        _css_regeln = []
+        # Handy: Streamlit stapelt Spalten auf schmalen Bildschirmen untereinander.
+        # Im Kalender sollen die 7 Wochentage aber nebeneinander bleiben (Monat auf einen Blick).
+        _css_regeln = ["""
+        @media (max-width: 640px) {
+            .st-key-kalender_bereich [data-testid="stHorizontalBlock"] {
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                gap: 2px !important;
+            }
+            .st-key-kalender_bereich [data-testid="stHorizontalBlock"] > [data-testid="stColumn"],
+            .st-key-kalender_bereich [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+                min-width: 0 !important;
+                width: auto !important;
+                flex: 1 1 0 !important;
+            }
+            .st-key-kalender_bereich button {
+                min-height: 2.6rem !important;
+                padding: 0 2px !important;
+            }
+            .st-key-kalender_bereich button p {
+                font-size: 13px !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+            }
+            .st-key-kalender_bereich button [data-testid="stIconMaterial"] {
+                font-size: 11px !important;
+            }
+        }"""]
         for jahr, monat in monate:
             render_monat_interaktiv(jahr, monat, df, _css_regeln)
         st.markdown(f"<style>{''.join(_css_regeln)}</style>", unsafe_allow_html=True)
