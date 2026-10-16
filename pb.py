@@ -258,6 +258,45 @@ def _automatisch_anmelden():
         st.session_state["pb_cookie_loeschen"] = True           # abgelaufen → vergessen
 
 
+def _passwort_aendern_formular():
+    """Kleines Formular in der Seitenleiste, mit dem jede Person ihr eigenes Passwort aendert."""
+    if st.session_state.pop("pb_passwort_geaendert", False):
+        st.sidebar.success("Dein Passwort wurde geändert.")
+    with st.sidebar.expander(":material/key: Passwort ändern"):
+        with st.form("pb_passwort_aendern", clear_on_submit=True):
+            alt = st.text_input("Aktuelles Passwort", type="password")
+            neu = st.text_input("Neues Passwort (mind. 10 Zeichen)", type="password")
+            neu2 = st.text_input("Neues Passwort wiederholen", type="password")
+            absenden = st.form_submit_button("Speichern", width="stretch")
+        if not absenden:
+            return
+        if len(neu) < 10:
+            st.error("Das neue Passwort muss mindestens 10 Zeichen haben.")
+            return
+        if neu != neu2:
+            st.error("Die beiden neuen Passwörter stimmen nicht überein.")
+            return
+        nutzer = st.session_state["pb_nutzer"]
+        try:
+            aendern("users", nutzer["id"], {"oldPassword": alt, "password": neu, "passwordConfirm": neu2})
+        except PBFehler as fehler:
+            if fehler.status == 400:
+                st.error("Das aktuelle Passwort stimmt nicht.")
+            else:
+                st.error(f"Das Passwort konnte nicht geändert werden ({fehler}).")
+            return
+        # Nach der Aenderung ist der alte Ausweis ungueltig -> mit dem neuen Passwort neu anmelden
+        r = requests.post(f"{PB_URL}/api/collections/users/auth-with-password",
+                          json={"identity": nutzer["email"], "password": neu}, timeout=10)
+        if r.status_code == 200:
+            st.session_state["pb_token"] = r.json()["token"]
+            st.session_state["pb_nutzer"] = r.json()["record"]
+            st.session_state["pb_cookie_neu"] = r.json()["token"]
+            st.session_state["pb_passwort_geaendert"] = True
+            st.rerun()
+        abmelden()
+
+
 def login_seite():
     """Zeigt das Login-Formular und hält die App an, bis jemand angemeldet ist."""
     if "pb_token" not in st.session_state:
@@ -266,6 +305,7 @@ def login_seite():
     if "pb_token" in st.session_state:
         if "pb_cookie_neu" in st.session_state:
             _cookie_schreiben(st.session_state.pop("pb_cookie_neu"), COOKIE_TAGE * 24 * 3600)
+        _passwort_aendern_formular()
         with st.sidebar:
             nutzer = st.session_state["pb_nutzer"]
             st.caption(f"Angemeldet als {nutzer.get('name') or nutzer['email']}")
