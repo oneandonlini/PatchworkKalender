@@ -5,6 +5,8 @@ import calendar
 import json
 import os
 import uuid
+import html
+import re
 
 import pb  # Verbindung zu PocketBase
 
@@ -98,7 +100,16 @@ def anzeige(elternteil):
 def farbe(elternteil):
     """Gibt die von der Nutzerin frei waehlbare Farbe fuer 'Elternteil 1'/'Elternteil 2' zurueck."""
     standard = {ELTERNTEIL_1: VATER_FARBE, ELTERNTEIL_2: MUTTER_FARBE}
-    return st.session_state.get("rollenfarben", {}).get(elternteil, standard.get(elternteil, "#888888"))
+    wert = st.session_state.get("rollenfarben", {}).get(elternteil, standard.get(elternteil, "#888888"))
+    # Nur echte Farbcodes zulassen - die Farbe landet in HTML/CSS (Schutz vor eingeschleustem Code)
+    if not isinstance(wert, str) or not re.fullmatch(r"#[0-9A-Fa-f]{6}", wert):
+        return standard.get(elternteil, "#888888")
+    return wert
+
+
+def _h(text):
+    """Nutzereingaben vor der Anzeige als HTML entschaerfen (z. B. < > " werden zu Text)."""
+    return html.escape(str(text))
 
 
 def euro(betrag):
@@ -840,10 +851,10 @@ st.markdown(
       <span>Funktionsprototyp</span>
       <span style="display:inline-block;padding:2px 11px;border-radius:999px;
                    background:{farbe(ELTERNTEIL_1)};color:white;font-size:0.72rem;font-weight:700;
-                   box-shadow:0 2px 5px rgba(0,0,0,0.12);">{anzeige(ELTERNTEIL_1)}</span>
+                   box-shadow:0 2px 5px rgba(0,0,0,0.12);">{_h(anzeige(ELTERNTEIL_1))}</span>
       <span style="display:inline-block;padding:2px 11px;border-radius:999px;
                    background:{farbe(ELTERNTEIL_2)};color:white;font-size:0.72rem;font-weight:700;
-                   box-shadow:0 2px 5px rgba(0,0,0,0.12);">{anzeige(ELTERNTEIL_2)}</span>
+                   box-shadow:0 2px 5px rgba(0,0,0,0.12);">{_h(anzeige(ELTERNTEIL_2))}</span>
     </div>
     """,
     unsafe_allow_html=True,
@@ -1428,11 +1439,11 @@ def seite_kalender():
                         font-size:13px;color:white;font-weight:600;margin-bottom:2px;">
               <div style="width:{_ziel_vorschau}%;background:{farbe(ELTERNTEIL_1)};
                           display:flex;align-items:center;justify-content:center;">
-                {anzeige(ELTERNTEIL_1) + " " + str(_ziel_vorschau) + "%" if _ziel_vorschau >= 12 else ""}
+                {_h(anzeige(ELTERNTEIL_1)) + " " + str(_ziel_vorschau) + "%" if _ziel_vorschau >= 12 else ""}
               </div>
               <div style="width:{100 - _ziel_vorschau}%;background:{farbe(ELTERNTEIL_2)};
                           display:flex;align-items:center;justify-content:center;">
-                {anzeige(ELTERNTEIL_2) + " " + str(100 - _ziel_vorschau) + "%" if (100 - _ziel_vorschau) >= 12 else ""}
+                {_h(anzeige(ELTERNTEIL_2)) + " " + str(100 - _ziel_vorschau) + "%" if (100 - _ziel_vorschau) >= 12 else ""}
               </div>
             </div>
             """,
@@ -2406,9 +2417,9 @@ def seite_pinnwand():
                     _pinnwand_karten_stil(_k["id"], "karte_kontakt_")
                     with _kspalten[_i % 3]:
                         with st.container(border=True, key=f"karte_kontakt_{_k['id']}"):
-                            st.markdown(f'<div class="karten-titel">{_k["name"]}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="karten-titel">{_h(_k["name"])}</div>', unsafe_allow_html=True)
                             if _k["rolle"]:
-                                st.markdown(f'<div class="karten-rolle">{_k["rolle"]}</div>', unsafe_allow_html=True)
+                                st.markdown(f'<div class="karten-rolle">{_h(_k["rolle"])}</div>', unsafe_allow_html=True)
                             if _k["telefon"]:
                                 st.write(f":material/call: {_k['telefon']}")
                             if _k.get("notiz"):
@@ -2692,10 +2703,10 @@ def seite_journal():
                 st.markdown(
                     "<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;'>"
                     f"<span style='font-size:0.8rem;color:var(--pe-ink-soft);font-weight:600;'>"
-                    f"{_datum_label}{_kind_label}</span>"
+                    f"{_h(_datum_label)}{_h(_kind_label)}</span>"
                     f"<span style='display:inline-block;padding:1px 10px;border-radius:999px;"
                     f"background:{_autor_farbe};color:white;font-size:0.7rem;font-weight:700;'>"
-                    f"{anzeige(_e['von'])}</span>"
+                    f"{_h(anzeige(_e['von']))}</span>"
                     "</div>",
                     unsafe_allow_html=True,
                 )
